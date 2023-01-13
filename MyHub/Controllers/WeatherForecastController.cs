@@ -33,7 +33,7 @@ namespace MyHub.Controllers
 		[HttpGet("GetIsWorking")]
 		public string GetIsWorking()
 		{
-			return "I AM ACTUALLY WORKING";
+			return "This is an update to check if CI/CD is working.";
 		}
 	}
 }
