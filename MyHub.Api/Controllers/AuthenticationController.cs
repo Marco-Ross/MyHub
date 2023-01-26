@@ -1,5 +1,4 @@
 using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
@@ -24,6 +23,12 @@ namespace MyHub.Controllers
 		public User Post([FromBody] UserDto userDto)
 		{
 			return _authenticationService.CreateUser(_mapper.Map<User>(userDto));
+		}
+
+		[HttpPost]
+		public IActionResult PostLogin([FromBody] UserDto userDto)
+		{
+			return Ok(_authenticationService.AuthenticateUser(_mapper.Map<User>(userDto)));
 		}
 
 		[HttpGet("GetKey")]

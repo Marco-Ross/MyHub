@@ -3,5 +3,6 @@
 	public interface IAuthenticationService
 	{
 		User CreateUser(User user);
+		Tokens AuthenticateUser(User user);
 	}
 }
