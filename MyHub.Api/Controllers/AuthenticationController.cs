@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
@@ -6,6 +7,7 @@ using System.Security.Cryptography;
 
 namespace MyHub.Controllers
 {
+	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
 	public class AuthenticationController : ControllerBase
@@ -20,15 +22,21 @@ namespace MyHub.Controllers
 		}
 
 		[HttpPost]
-		public User Post([FromBody] UserDto userDto)
+		public User Post(UserDto userDto)
 		{
 			return _authenticationService.CreateUser(_mapper.Map<User>(userDto));
 		}
 
-		[HttpPost]
-		public IActionResult PostLogin([FromBody] UserDto userDto)
+		[AllowAnonymous]
+		[HttpPost("Authenticate")]
+		public IActionResult Authenticate(UserDto userDto)
 		{
-			return Ok(_authenticationService.AuthenticateUser(_mapper.Map<User>(userDto)));
+			var token = _authenticationService.AuthenticateUser(_mapper.Map<User>(userDto));
+
+			if(token is null)
+				return Unauthorized();
+
+			return Ok(token);
 		}
 
 		[HttpGet("GetKey")]

@@ -7,9 +7,30 @@ using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Infrastructure.Repository.EntityFramework;
 using System.Text;
 
+const string AllowedCorsOrigins = "_corsOrigins";
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+builder.Services.AddCors(options =>
+{
+	options.AddPolicy(name: AllowedCorsOrigins, policy =>
+	{
+		policy.WithOrigins("http://localhost:4200")
+		.AllowAnyMethod()
+		.AllowAnyHeader();
+		//.AllowCredentials();
+	});
+});
+
+builder.Services.AddHsts(options =>
+{
+	options.Preload = true;
+	options.IncludeSubDomains = true;
+	options.MaxAge = TimeSpan.FromDays(60); //usually a year
+	//options.ExcludedHosts.Add("example.com");
+});
 
 builder.Services.AddAuthentication(options =>
 {
@@ -31,26 +52,28 @@ builder.Services.AddAuthentication(options =>
 	};
 });
 
-//Not use?
-//builder.Services.AddHttpsRedirection(options =>
-//{
-//	options.HttpsPort = 49159;
-//});
+builder.Services.AddHttpsRedirection(options =>
+{
+	options.HttpsPort = 4040;
+});
 
-builder.Services.AddAuthorization(); //claims?
+//builder.Services.AddResponseCaching; //has to be after AddCors
+builder.Services.AddAuthorization();
 builder.Services.AddAutoMapper(typeof(IDomainAssemblyMarker));
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 //Move to new file and reference
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 
-//Use HSTS in azure?
-
 builder.Services.AddControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+
+////////////
+
 
 var app = builder.Build();
 
@@ -60,12 +83,18 @@ if (app.Environment.IsDevelopment())
 	app.UseSwagger();
 	app.UseSwaggerUI();
 }
+else
+{
+	//Use HSTS in azure?
+	app.UseHsts();
+}
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
-app.UseAuthorization();
+app.UseCors(AllowedCorsOrigins);
+
 app.UseAuthentication();
-
-app.MapControllers();//.RequireAuthorization();
+app.UseAuthorization();
+app.MapControllers();
 
 app.Run();

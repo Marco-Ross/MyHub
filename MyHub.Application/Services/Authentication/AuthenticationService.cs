@@ -22,7 +22,7 @@ namespace MyHub.Application.Services.Authentication
 
 		public User CreateUser(User user)
 		{
-			user.Id = Guid.NewGuid();
+			user.Id = Guid.NewGuid().ToString();
 
 			//save encrypted password
 
@@ -46,13 +46,15 @@ namespace MyHub.Application.Services.Authentication
 			var tokenKey = Encoding.UTF8.GetBytes(_configuration["JWT:Key"] ?? string.Empty);
 			var tokenDescriptor = new SecurityTokenDescriptor
 			{
+				Audience = _configuration["JWT:Audience"],
+				Issuer = _configuration["JWT:Issuer"],
 				Subject = new ClaimsIdentity(new Claim[]
 				{
 					new Claim("Id", user.Id.ToString()),
 					new Claim(JwtRegisteredClaimNames.Sub, user.Username),
 					new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
 					new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-					new Claim(JwtRegisteredClaimNames.Email, user.Email)
+					//new Claim(JwtRegisteredClaimNames.Email, user.Email)
 				}),
 				Expires = DateTime.UtcNow.AddMinutes(15), //Single sing on?
 				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey), SecurityAlgorithms.HmacSha256Signature)
