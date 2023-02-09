@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MyHub.Domain.Authentication;
+using MyHub.Domain.Users;
 
 namespace MyHub.Infrastructure.Repository.EntityFramework
 {
@@ -7,6 +7,6 @@ namespace MyHub.Infrastructure.Repository.EntityFramework
     {
 		public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
-		public DbSet<User> User { get; set; }
+		public DbSet<User> Users { get; set; }
 	}
 }

@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
-using MyHub.Domain.Authentication;
+using MyHub.Domain.Users;
 
 namespace MyHub.Domain.DtoMappingProfiles.Authentication
 {
-	public class UserProfile : Profile
+    public class UserProfile : Profile
 	{
 		public UserProfile()
 		{

@@ -1,9 +1,12 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.JsonWebTokens;
+using MyHub.Application.Services.Users;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
-using System.Security.Cryptography;
+using MyHub.Domain.Users;
+using MyHub.Domain.Users.Interfaces;
 
 namespace MyHub.Controllers
 {
@@ -14,41 +17,76 @@ namespace MyHub.Controllers
 	{
 		private readonly IMapper _mapper;
 		private readonly IAuthenticationService _authenticationService;
+		private readonly IUserService _userService;
 
-		public AuthenticationController(IAuthenticationService authenticationService, IMapper mapper)
+		public AuthenticationController(IMapper mapper, IAuthenticationService authenticationService, IUserService userService)
 		{
 			_authenticationService = authenticationService;
+			_userService = userService;
 			_mapper = mapper;
 		}
 
-		[HttpPost]
-		public User Post(UserDto userDto)
+		[AllowAnonymous]
+		[HttpPost("Login")]
+		public IActionResult Post(UserDto userDto)
 		{
-			return _authenticationService.CreateUser(_mapper.Map<User>(userDto));
+			var tokens = _authenticationService.AuthenticateUser(userDto.Username, userDto.Password);
+
+			Response.Cookies.Append("X-Access-Token", tokens.Token, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true });
+			Response.Cookies.Append("X-Refresh-Token", tokens.RefreshToken, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true }); // expires?
+
+			return Ok();
 		}
 
 		[AllowAnonymous]
-		[HttpPost("Authenticate")]
-		public IActionResult Authenticate(UserDto userDto)
+		[HttpGet("Refresh")]
+		public IActionResult Refresh()
 		{
-			var token = _authenticationService.AuthenticateUser(_mapper.Map<User>(userDto));
+			if (!(Request.Cookies.TryGetValue("X-Access-Token", out var accessToken) && Request.Cookies.TryGetValue("X-Refresh-Token", out var refreshToken)))
+				return BadRequest();
 
-			if(token is null)
-				return Unauthorized();
+			var newAccessTokens = _authenticationService.RefreshUserAuthentication(accessToken, refreshToken);
 
-			return Ok(token);
+			Response.Cookies.Append("X-Access-Token", newAccessTokens.Token, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true });
+			Response.Cookies.Append("X-Refresh-Token", newAccessTokens.RefreshToken, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true });
+
+			return Ok();
 		}
 
-		[HttpGet("GetKey")]
-		public string GetIsWorking()
+		[HttpPost]
+		[Route("Revoke")]
+		public IActionResult Revoke()
 		{
-			var key = new byte[32];
-			RNGCryptoServiceProvider.Create().GetBytes(key);
-			var base64Secret = Convert.ToBase64String(key);
-			// make safe for url
-			var urlEncoded = base64Secret.TrimEnd('=').Replace('+', '-').Replace('/', '_');
+			var userId = User.Claims.First(x => x.Type == JwtRegisteredClaimNames.Sub).Value;
 
-			return urlEncoded;
+			var user = _userService.GetUser(userId);
+
+			if (user == null) 
+				return BadRequest();
+
+			user.RefreshToken = string.Empty;
+
+			_userService.UpdateUser(user);
+
+			Response.Cookies.Delete("X-Access-Token");
+			Response.Cookies.Delete("X-Refresh-Token");
+
+			return NoContent();
+		}
+
+		[HttpGet]
+		[Route("Test")]
+		public IActionResult Test()
+		{
+			return Ok(new {Number =  "This is a test" + new Random().Next() });
+		}
+
+		[AllowAnonymous]
+		[HttpGet]
+		[Route("SuperTest")]
+		public IActionResult SuperTest()
+		{
+			return Ok(new { Number = "This is a test" + new Random().Next() });
 		}
 	}
 }
