@@ -1,5 +1,4 @@
-﻿using Azure.Core;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
@@ -22,7 +21,7 @@ namespace MyHub.Application.Services.Authentication
 			_userService = userService;
 		}
 
-		public Tokens AuthenticateUser(string username, string password)
+		public Tokens? AuthenticateUser(string username, string password)
 		{
 			var authenticatingUser = _userService.GetUserWithCredentials(username, password);
 
@@ -31,41 +30,32 @@ namespace MyHub.Application.Services.Authentication
 
 			var tokens = GenerateAccessTokens(authenticatingUser);
 
-			if (tokens is null)
-				return null;
-
-			SetUserRefreshToken(authenticatingUser, tokens.RefreshToken);
+			_userService.UpdateRefreshToken(authenticatingUser, tokens.RefreshToken);
 
 			return tokens;
 		}
-		public Tokens RefreshUserAuthentication(string accessToken, string refreshToken)
+		public Tokens? RefreshUserAuthentication(string accessToken, string refreshToken)
 		{
-			var principle = GetPrincipleFromExpiredToken(accessToken);
+			var principle = GetPrincipleFromToken(accessToken);
 			var userId = principle.Claims.First(x => x.Type == JwtRegisteredClaimNames.Sub).Value;
 
 			var user = _userService.GetUser(userId);
 
-			if (user.RefreshToken != refreshToken /*|| user.RefreshTokenExpiryTime <= DateTime.Now*/)
-			{
-				user.RefreshToken = null;
-				//revoke all user tokens
-				_userService.UpdateUser(user);
+			if (user is null)
+				return null;
 
-				throw new InvalidOperationException("Login has be invalidated.");
+			if (user.RefreshToken != refreshToken)
+			{
+				_userService.RevokeUser(user);
+
+				throw new InvalidOperationException("Login has been invalidated.");
 			}
 
 			var newAccessTokens = GenerateAccessTokens(user);
 
-			SetUserRefreshToken(user, newAccessTokens.RefreshToken);
+			_userService.UpdateRefreshToken(user, refreshToken);
 
 			return newAccessTokens;
-		}
-
-		private void SetUserRefreshToken(User user, string refreshToken)
-		{
-			user.RefreshToken = refreshToken;
-
-			_userService.UpdateUser(user);
 		}
 
 		public Tokens GenerateAccessTokens(User user)
@@ -83,7 +73,7 @@ namespace MyHub.Application.Services.Authentication
 					new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
 					new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
 				}),
-				Expires = DateTime.UtcNow.AddSeconds(15), //15min
+				Expires = DateTime.UtcNow.AddMinutes(15),
 				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey), SecurityAlgorithms.HmacSha256Signature)
 			};
 
@@ -92,7 +82,7 @@ namespace MyHub.Application.Services.Authentication
 			return new Tokens { Token = tokenHandler.WriteToken(token), RefreshToken = Guid.NewGuid().ToString() };
 		}
 
-		private ClaimsPrincipal GetPrincipleFromExpiredToken(string token)
+		private ClaimsPrincipal GetPrincipleFromToken(string token)
 		{
 			var tokenKey = Encoding.UTF8.GetBytes(_configuration["JWT:Key"] ?? string.Empty);
 

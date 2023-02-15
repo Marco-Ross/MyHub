@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using MyHub.Domain.Authentication;
-using MyHub.Domain.Users;
+﻿using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Infrastructure.Repository.EntityFramework;
 
@@ -27,10 +25,26 @@ namespace MyHub.Application.Services.Users
 			return savedUser.Entity;
 		}
 
-		public User UpdateUser(User user)
+		public User? RevokeUser(string userId)
 		{
-			_applicationDbContext.Users.Attach(user);
-			_applicationDbContext.Entry(user).State = EntityState.Modified;
+			var user = GetUser(userId);
+
+			if (user == null)
+				return null;
+
+			user.RefreshToken = string.Empty;
+
+			_applicationDbContext.SaveChanges();
+
+			return user;
+		}
+
+		public User? RevokeUser(User user)
+		{
+			if (user == null)
+				return null;
+
+			user.RefreshToken = string.Empty;
 
 			_applicationDbContext.SaveChanges();
 
@@ -48,6 +62,13 @@ namespace MyHub.Application.Services.Users
 			//user doesnt exist exception
 
 			return _applicationDbContext.Users.SingleOrDefault(x => x.Username == username && x.Password == password);
+		}
+
+		public void UpdateRefreshToken(User authenticatingUser, string refreshToken)
+		{
+			authenticatingUser.RefreshToken = refreshToken;
+
+			_applicationDbContext.SaveChanges();
 		}
 	}
 }

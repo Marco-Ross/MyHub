@@ -2,7 +2,6 @@ using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
-using MyHub.Application.Services.Users;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Users;
@@ -26,14 +25,30 @@ namespace MyHub.Controllers
 			_mapper = mapper;
 		}
 
+		private void SetCookieTokens(Tokens tokens)
+		{
+			Response.Cookies.Append("X-Access-Token", tokens.Token, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue });
+			Response.Cookies.Append("X-Refresh-Token", tokens.RefreshToken, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue });
+			Response.Cookies.Append("X-Logged-In", "true", new CookieOptions { SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue });
+		}
+
+		private void RemoveCookies()
+		{
+			Response.Cookies.Delete("X-Access-Token");
+			Response.Cookies.Delete("X-Refresh-Token");
+			Response.Cookies.Delete("X-Logged-In");
+		}
+
 		[AllowAnonymous]
 		[HttpPost("Login")]
 		public IActionResult Post(UserDto userDto)
 		{
 			var tokens = _authenticationService.AuthenticateUser(userDto.Username, userDto.Password);
 
-			Response.Cookies.Append("X-Access-Token", tokens.Token, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true });
-			Response.Cookies.Append("X-Refresh-Token", tokens.RefreshToken, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true }); // expires?
+			if (tokens is null)
+				return Unauthorized("Invalid Login Credentials.");
+
+			SetCookieTokens(tokens);
 
 			return Ok();
 		}
@@ -43,45 +58,42 @@ namespace MyHub.Controllers
 		public IActionResult Refresh()
 		{
 			if (!(Request.Cookies.TryGetValue("X-Access-Token", out var accessToken) && Request.Cookies.TryGetValue("X-Refresh-Token", out var refreshToken)))
-				return BadRequest();
+				return BadRequest("Access Token or Refresh Token not set.");
 
-			var newAccessTokens = _authenticationService.RefreshUserAuthentication(accessToken, refreshToken);
+			var tokens = _authenticationService.RefreshUserAuthentication(accessToken, refreshToken);
 
-			Response.Cookies.Append("X-Access-Token", newAccessTokens.Token, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true });
-			Response.Cookies.Append("X-Refresh-Token", newAccessTokens.RefreshToken, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true });
+			if (tokens is null)
+			{
+				RemoveCookies();
+
+				return Unauthorized("User cannot be authenticated.");
+			}
+
+			SetCookieTokens(tokens);
 
 			return Ok();
 		}
 
-		[HttpPost]
+		[HttpGet]
 		[Route("Revoke")]
 		public IActionResult Revoke()
 		{
 			var userId = User.Claims.First(x => x.Type == JwtRegisteredClaimNames.Sub).Value;
 
-			var user = _userService.GetUser(userId);
+			_userService.RevokeUser(userId);
 
-			if (user == null) 
-				return BadRequest();
+			RemoveCookies();
 
-			user.RefreshToken = string.Empty;
-
-			_userService.UpdateUser(user);
-
-			Response.Cookies.Delete("X-Access-Token");
-			Response.Cookies.Delete("X-Refresh-Token");
-
-			return NoContent();
+			return Ok();
 		}
 
 		[HttpGet]
 		[Route("Test")]
 		public IActionResult Test()
 		{
-			return Ok(new {Number =  "This is a test" + new Random().Next() });
+			return Ok(new { Number = "This is a test" + new Random().Next() });
 		}
 
-		[AllowAnonymous]
 		[HttpGet]
 		[Route("SuperTest")]
 		public IActionResult SuperTest()
