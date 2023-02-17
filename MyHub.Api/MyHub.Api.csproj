@@ -8,7 +8,7 @@
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 		<DockerfileContext>.</DockerfileContext>
 		<DockerfileFile>../Dockerfile</DockerfileFile>
-		<DockerfileRunArguments>-p "4040:443" -p "5050:80"</DockerfileRunArguments>
+		<DockerfileRunArguments>-p "443:443" -p "80:80"</DockerfileRunArguments>
 	</PropertyGroup>
 
 	<ItemGroup>
