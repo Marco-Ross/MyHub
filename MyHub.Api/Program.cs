@@ -17,7 +17,9 @@ const string AllowedCorsOrigins = "_corsOrigins";
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
 builder.Services.AddDataProtection().UseCryptographicAlgorithms(new AuthenticatedEncryptorConfiguration()
 {
 	EncryptionAlgorithm = EncryptionAlgorithm.AES_256_GCM,
@@ -28,20 +30,12 @@ builder.Services.AddCors(options =>
 {
 	options.AddPolicy(name: AllowedCorsOrigins, policy =>
 	{
-		policy.WithOrigins("https://marco-hub-web.azurewebsites.net", "https://localhost:4200", "https://localhost:5100")
+		policy.WithOrigins("https://marcoshub.com", "https://localhost:4200", "https://localhost:5100")//maybe no local host in prod?
 		.AllowAnyMethod()
 		.AllowAnyHeader()
 		.AllowCredentials();
 	});
 });
-
-//builder.Services.AddHsts(options =>
-//{
-//	options.Preload = true;
-//	options.IncludeSubDomains = true;
-//	options.MaxAge = TimeSpan.FromDays(60); //usually a year
-//											//options.ExcludedHosts.Add("example.com");
-//});
 
 builder.Services.AddAuthentication(options =>
 {
@@ -77,10 +71,6 @@ builder.Services.AddAuthentication(options =>
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
 
-//builder.Services.AddHttpsRedirection(options =>
-//{
-//	options.HttpsPort = 4040;
-//});
 
 //builder.Services.AddResponseCaching; //has to be after AddCors
 builder.Services.AddAuthorization();

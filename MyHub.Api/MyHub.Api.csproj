@@ -7,7 +7,6 @@
 		<UserSecretsId>a79fc9e8-5f64-46e0-9648-85c576332687</UserSecretsId>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 		<DockerfileContext>.</DockerfileContext>
-		<DockerfileFile>../Dockerfile</DockerfileFile>
 		<DockerfileRunArguments>-p "443:443" -p "80:80"</DockerfileRunArguments>
 	</PropertyGroup>
 
@@ -26,5 +25,4 @@
 		<ProjectReference Include="..\MyHub.Domain\MyHub.Domain.csproj" />
 		<ProjectReference Include="..\MyHub.Infrastructure\MyHub.Infrastructure.csproj" />
 	</ItemGroup>
-
 </Project>

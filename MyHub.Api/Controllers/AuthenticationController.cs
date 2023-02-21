@@ -28,10 +28,13 @@ namespace MyHub.Controllers
 
 		private void SetCookieTokens(Tokens tokens)
 		{
-			Response.Cookies.Append("X-Access-Token", tokens.Token, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue });
-			Response.Cookies.Append("X-Refresh-Token", tokens.RefreshToken, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue });
-			Response.Cookies.Append("X-Logged-In", "true", new CookieOptions { SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue });
-			Response.Cookies.Append("X-Forgery-Token", _encryptionService.Encrypt(_configuration?["CSRF:Token"]), new CookieOptions { SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue });
+			var httpOnlyCookieOptions = new CookieOptions { Domain = _configuration?["Cookies:Domain"], HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
+			Response.Cookies.Append("X-Access-Token", tokens.Token, httpOnlyCookieOptions);
+			Response.Cookies.Append("X-Refresh-Token", tokens.RefreshToken, httpOnlyCookieOptions);
+
+			var cookieOptions = new CookieOptions { Domain = _configuration?["Cookies:Domain"], SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
+			Response.Cookies.Append("X-Logged-In", "true", cookieOptions);
+			Response.Cookies.Append("X-Forgery-Token", _encryptionService.Encrypt(_configuration?["Cookies:CsrfToken"]), cookieOptions);
 		}
 
 		private void RemoveCookies()
@@ -69,7 +72,7 @@ namespace MyHub.Controllers
 			{
 				RemoveCookies();
 
-				return Unauthorized("User cannot be authenticated.");
+				return Forbid("User cannot be authenticated.");
 			}
 
 			SetCookieTokens(tokens);
@@ -82,7 +85,10 @@ namespace MyHub.Controllers
 		{
 			var userId = User.Claims.First(x => x.Type == JwtRegisteredClaimNames.Sub).Value;
 
-			_userService.RevokeUser(userId);
+			var revokedUser = _userService.RevokeUser(userId);
+
+			if(revokedUser is null)
+				return Forbid("User does not exist.");
 
 			RemoveCookies();
 

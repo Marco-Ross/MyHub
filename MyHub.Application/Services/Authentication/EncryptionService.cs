@@ -1,15 +1,19 @@
 ﻿using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Logging;
 using MyHub.Domain.Authentication.Interfaces;
+using System.Security.Cryptography;
 
 namespace MyHub.Application.Services.Authentication
 {
 	public class EncryptionService : IEncryptionService
 	{
+		private readonly ILogger _logger;
 		private readonly IDataProtectionProvider _dataProtectionProvider;
 		private const string Protector = "MyHubProtector";
 
-		public EncryptionService(IDataProtectionProvider dataProtectionProvider)
+		public EncryptionService(ILogger<EncryptionService> logger, IDataProtectionProvider dataProtectionProvider)
 		{
+			_logger = logger;
 			_dataProtectionProvider = dataProtectionProvider;
 		}
 		public string Encrypt(string? input)
@@ -17,8 +21,15 @@ namespace MyHub.Application.Services.Authentication
 			if (string.IsNullOrWhiteSpace(input))
 				return string.Empty;
 
-			var protector = _dataProtectionProvider.CreateProtector(Protector);
-			return protector.Protect(input);
+			try {
+				var protector = _dataProtectionProvider.CreateProtector(Protector);
+				return protector.Protect(input);
+			}
+			catch (CryptographicException e)
+			{
+				_logger.LogError("CSRF encryption failed.", e);
+				return string.Empty;
+			}
 		}
 
 		public string Decrypt(string? encryptionText)
@@ -26,8 +37,16 @@ namespace MyHub.Application.Services.Authentication
 			if (string.IsNullOrWhiteSpace(encryptionText))
 				return string.Empty;
 
-			var protector = _dataProtectionProvider.CreateProtector(Protector);
-			return protector.Unprotect(encryptionText);
+			try
+			{
+				var protector = _dataProtectionProvider.CreateProtector(Protector);
+				return protector.Unprotect(encryptionText);
+			}
+			catch(CryptographicException e)
+			{
+				_logger.LogError("CSRF decryption failed.", e);
+				return string.Empty;
+			}
 		}	
 	}
 }
