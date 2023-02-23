@@ -39,10 +39,12 @@ namespace MyHub.Controllers
 
 		private void RemoveCookies()
 		{
-			Response.Cookies.Delete("X-Access-Token");
-			Response.Cookies.Delete("X-Refresh-Token");
-			Response.Cookies.Delete("X-Logged-In");
-			Response.Cookies.Delete("X-Forgery-Token");
+			var cookieDomainOptions = new CookieOptions { Domain = _configuration?["Cookies:Domain"] };
+
+			Response.Cookies.Delete("X-Access-Token", cookieDomainOptions);
+			Response.Cookies.Delete("X-Refresh-Token", cookieDomainOptions);
+			Response.Cookies.Delete("X-Logged-In", cookieDomainOptions);
+			Response.Cookies.Delete("X-Forgery-Token", cookieDomainOptions);
 		}
 
 		[AllowAnonymous]
@@ -93,28 +95,6 @@ namespace MyHub.Controllers
 			RemoveCookies();
 
 			return Ok();
-		}
-
-		[HttpGet]
-		[Route("Test")]
-		public IActionResult Test()
-		{
-			return Ok(new { Number = "This is a test" + new Random().Next() });
-		}
-
-		[HttpGet]
-		[Route("SuperTest")]
-		public IActionResult SuperTest()
-		{
-			return Ok(new { Number = "This is a test" + new Random().Next() });
-		}
-
-		[AllowAnonymous]
-		[HttpGet]
-		[Route("Key")]
-		public IActionResult Key()
-		{
-			return Ok(Guid.NewGuid());
 		}
 	}
 }

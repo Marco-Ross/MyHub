@@ -7,6 +7,7 @@
 		<UserSecretsId>a79fc9e8-5f64-46e0-9648-85c576332687</UserSecretsId>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 		<DockerfileContext>.</DockerfileContext>
+		<DockerfileFile>../Dockerfile</DockerfileFile>
 		<DockerfileRunArguments>-p "443:443" -p "80:80"</DockerfileRunArguments>
 	</PropertyGroup>
 
