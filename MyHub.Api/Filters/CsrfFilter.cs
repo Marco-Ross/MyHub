@@ -14,7 +14,7 @@ namespace MyHub.Application.Services.Authentication
 		{
 			var requestScope = context.HttpContext.RequestServices;
 
-			var _encryptionService = requestScope.GetService(typeof(IEncryptionService)) as IEncryptionService;
+			var _encryptionService = requestScope.GetService(typeof(ICsrfEncryptionService)) as ICsrfEncryptionService;
 			var _configuration = requestScope.GetService(typeof(IConfiguration)) as IConfiguration;
 
 			var hasForgeryCookie = context.HttpContext.Request.Cookies.TryGetValue("X-Forgery-Token", out var forgeryToken);

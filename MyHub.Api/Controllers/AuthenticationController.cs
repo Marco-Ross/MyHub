@@ -1,3 +1,4 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -13,13 +14,15 @@ namespace MyHub.Controllers
 	[Route("[controller]")]
 	public class AuthenticationController : ControllerBase
 	{
+		private readonly IMapper _mapper;
 		private readonly IConfiguration _configuration;
 		private readonly IAuthenticationService _authenticationService;
 		private readonly IUserService _userService;
-		private readonly IEncryptionService _encryptionService;
+		private readonly ICsrfEncryptionService _encryptionService;
 
-		public AuthenticationController(IConfiguration configuration, IAuthenticationService authenticationService, IUserService userService, IEncryptionService encryptionService)
+		public AuthenticationController(IMapper mapper, IConfiguration configuration, IAuthenticationService authenticationService, IUserService userService, ICsrfEncryptionService encryptionService)
 		{
+			_mapper = mapper;
 			_configuration = configuration;
 			_authenticationService = authenticationService;
 			_userService = userService;
@@ -48,13 +51,25 @@ namespace MyHub.Controllers
 		}
 
 		[AllowAnonymous]
-		[HttpPost("Login")]
-		public IActionResult Post(UserDto userDto)
+		[HttpPost("Register")]
+		public IActionResult Register(LoginUserDto userDto)
 		{
-			var tokens = _authenticationService.AuthenticateUser(userDto.Username, userDto.Password);
+			var user = _authenticationService.RegisterUser(_mapper.Map<User>(userDto));
+
+			if (user is null)
+				return Unauthorized("Email already exists");
+
+			return Ok();
+		}
+
+		[AllowAnonymous]
+		[HttpPost("Login")]
+		public IActionResult Post(LoginUserDto userDto)
+		{
+			var tokens = _authenticationService.AuthenticateUser(userDto.Email, userDto.Password);
 
 			if (tokens is null)
-				return Unauthorized("Invalid Login Credentials.");
+				return Unauthorized("Invalid Login Credentials");
 
 			SetCookieTokens(tokens);
 
@@ -66,7 +81,7 @@ namespace MyHub.Controllers
 		public IActionResult Refresh()
 		{
 			if (!(Request.Cookies.TryGetValue("X-Access-Token", out var accessToken) && Request.Cookies.TryGetValue("X-Refresh-Token", out var refreshToken)))
-				return BadRequest("Access Token or Refresh Token not set.");
+				return BadRequest("Access Token or Refresh Token not set");
 
 			var tokens = _authenticationService.RefreshUserAuthentication(accessToken, refreshToken);
 
@@ -74,7 +89,7 @@ namespace MyHub.Controllers
 			{
 				RemoveCookies();
 
-				return Forbid("User cannot be authenticated.");
+				return Forbid("User cannot be authenticated");
 			}
 
 			SetCookieTokens(tokens);
@@ -90,7 +105,7 @@ namespace MyHub.Controllers
 			var revokedUser = _userService.RevokeUser(userId);
 
 			if(revokedUser is null)
-				return Forbid("User does not exist.");
+				return Forbid("User does not exist");
 
 			RemoveCookies();
 

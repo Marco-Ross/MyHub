@@ -96,7 +96,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlSer
 //Move to new file and reference
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IEncryptionService, EncryptionService>();
+builder.Services.AddScoped<ICsrfEncryptionService, CsrfEncryptionService>();
+builder.Services.AddScoped<IPasswordEncryptionService, PasswordEncryptionService>();
 
 builder.Services.AddControllers(config =>
 {

@@ -7,17 +7,16 @@ namespace MyHub.Application.Services.Users
 	public class UserService : IUserService
 	{
 		private readonly ApplicationDbContext _applicationDbContext;
+		
 
 		public UserService(ApplicationDbContext applicationDbContext)
 		{
 			_applicationDbContext = applicationDbContext;
 		}
 
-		public User CreateUser(User user)
+		public User RegisterUser(User user)
 		{
 			user.Id = Guid.NewGuid().ToString();
-
-			//save encrypted password
 
 			var savedUser = _applicationDbContext.Add(user);
 			_applicationDbContext.SaveChanges();
@@ -55,13 +54,15 @@ namespace MyHub.Application.Services.Users
 		{
 			return _applicationDbContext.Find<User>(id);
 		}
-
-		public User? GetUserWithCredentials(string username, string password)
+		
+		public bool UserExists(string email)
 		{
-			//password = password ?? string.Empty; // hashed password.
-			//user doesnt exist exception
+			return _applicationDbContext.Users.Any(x => x.Email == email);
+		}
 
-			return _applicationDbContext.Users.SingleOrDefault(x => x.Username == username && x.Password == password);
+		public User? GetUserByEmail(string email)
+		{
+			return _applicationDbContext.Users.SingleOrDefault(x => x.Email == email);
 		}
 
 		public void UpdateRefreshToken(User authenticatingUser, string refreshToken)

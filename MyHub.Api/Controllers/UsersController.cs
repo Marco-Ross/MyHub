@@ -32,13 +32,6 @@ namespace MyHub.Api.Controllers
 			return "value";
 		}
 
-		[AllowAnonymous]
-		[HttpPost]
-		public User Post(UserDto userDto)
-		{
-			return _userService.CreateUser(_mapper.Map<User>(userDto));
-		}
-
 		[HttpPut("{id}")]
 		public void Put(int id, [FromBody] string value)
 		{

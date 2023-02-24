@@ -5,13 +5,13 @@ using System.Security.Cryptography;
 
 namespace MyHub.Application.Services.Authentication
 {
-	public class EncryptionService : IEncryptionService
+	public class CsrfEncryptionService : ICsrfEncryptionService
 	{
 		private readonly ILogger _logger;
 		private readonly IDataProtectionProvider _dataProtectionProvider;
 		private const string Protector = "MyHubProtector";
 
-		public EncryptionService(ILogger<EncryptionService> logger, IDataProtectionProvider dataProtectionProvider)
+		public CsrfEncryptionService(ILogger<CsrfEncryptionService> logger, IDataProtectionProvider dataProtectionProvider)
 		{
 			_logger = logger;
 			_dataProtectionProvider = dataProtectionProvider;
