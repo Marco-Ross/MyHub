@@ -99,7 +99,7 @@ namespace MyHub.Controllers
 		[HttpPost("Revoke")]
 		public IActionResult Revoke()
 		{
-			var userId = User.Claims.First(x => x.Type == JwtRegisteredClaimNames.Sub).Value;
+			var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? string.Empty;
 
 			var isUserRevoked= _authenticationService.RevokeUser(userId);
 
