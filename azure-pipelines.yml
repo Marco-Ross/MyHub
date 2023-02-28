@@ -14,7 +14,8 @@ variables:
   imageRepository: 'myhub'
   containerRegistry: 'thehub.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
-  tag: '$(Build.BuildId)'
+  tag: 'latest'
+  # tag: '$(Build.BuildId)'
 
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
