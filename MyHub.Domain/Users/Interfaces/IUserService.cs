@@ -5,10 +5,10 @@
         User RegisterUser(User user);
 		User? RevokeUser(string user);
 		User? RevokeUser(User user);
-		User? GetUser(string id);
 		bool UserExists(string email);
 
-		User? GetUserByEmail(string username);
+		User? GetFullUserByEmail(string username);
+		User? GetFullUserById(string id);
 		void UpdateRefreshToken(User authenticatingUser, string refreshToken);
 	}
 }
