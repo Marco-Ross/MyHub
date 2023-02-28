@@ -26,5 +26,4 @@
 		<ProjectReference Include="..\MyHub.Domain\MyHub.Domain.csproj" />
 		<ProjectReference Include="..\MyHub.Infrastructure\MyHub.Infrastructure.csproj" />
 	</ItemGroup>
-
 </Project>

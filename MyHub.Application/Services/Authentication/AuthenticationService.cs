@@ -14,18 +14,36 @@ namespace MyHub.Application.Services.Authentication
 	{
 		private readonly IConfiguration _configuration;
 		private readonly IUserService _userService;
+		private readonly IPasswordEncryptionService _passwordEncryptionService;
 
-		public AuthenticationService(IConfiguration configuration, IUserService userService)
+		public AuthenticationService(IConfiguration configuration, IUserService userService, IPasswordEncryptionService passwordEncryptionService)
 		{
 			_configuration = configuration;
 			_userService = userService;
+			_passwordEncryptionService = passwordEncryptionService;
 		}
 
-		public Tokens? AuthenticateUser(string username, string password)
+		public User? RegisterUser(User user)
 		{
-			var authenticatingUser = _userService.GetUserWithCredentials(username, password);
+			if (_userService.UserExists(user.Email))
+				return null;
+
+			var hashedPassword = _passwordEncryptionService.HashPassword(user.Password, out var salt);
+
+			user.Password = hashedPassword;
+			user.Salt = Convert.ToHexString(salt);
+
+			return _userService.RegisterUser(user);
+		}
+
+		public Tokens? AuthenticateUser(string email, string password)
+		{
+			var authenticatingUser = _userService.GetUserByEmail(email);
 
 			if (authenticatingUser is null)
+				return null;
+
+			if (!_passwordEncryptionService.VerifyPassword(password, authenticatingUser.Password, authenticatingUser.Salt))
 				return null;
 
 			var tokens = GenerateAccessTokens(authenticatingUser);
@@ -69,9 +87,10 @@ namespace MyHub.Application.Services.Authentication
 				Subject = new ClaimsIdentity(new Claim[]
 				{
 					new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+					new Claim(JwtRegisteredClaimNames.Email, user.Email),
 					new Claim(JwtRegisteredClaimNames.Name, user.Username),
 					new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
-					new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+					new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())					
 				}),
 				Expires = DateTime.UtcNow.AddMinutes(15),
 				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey), SecurityAlgorithms.HmacSha256Signature)

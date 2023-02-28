@@ -2,22 +2,40 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MyHub.Application.Services.Authentication;
 using MyHub.Application.Services.Users;
 using MyHub.Domain;
 using MyHub.Domain.Authentication.Interfaces;
+using MyHub.Domain.RateLimiterOptions;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Infrastructure.Repository.EntityFramework;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using System.Threading.RateLimiting;
 
 const string AllowedCorsOrigins = "_corsOrigins";
+const string SlidingPolicy = "sliding";
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+//Clear and add logger DI
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
+//Rate Limiter
+var rateOptions = new MyRateLimiterOptions();
+builder.Services.AddRateLimiter(options => options.AddSlidingWindowLimiter(policyName: SlidingPolicy, options =>
+{
+	options.PermitLimit = rateOptions.PermitLimit;
+	options.Window = rateOptions.Window;
+	options.SegmentsPerWindow = rateOptions.SegmentsPerWindow;
+	options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+	options.QueueLimit = rateOptions.QueueLimit;
+}));
+
 builder.Services.AddDataProtection().UseCryptographicAlgorithms(new AuthenticatedEncryptorConfiguration()
 {
 	EncryptionAlgorithm = EncryptionAlgorithm.AES_256_GCM,
@@ -28,20 +46,12 @@ builder.Services.AddCors(options =>
 {
 	options.AddPolicy(name: AllowedCorsOrigins, policy =>
 	{
-		policy.WithOrigins("https://marco-hub-web.azurewebsites.net", "https://localhost:4200", "https://localhost:5100")
+		policy.WithOrigins("https://marcoshub.com", "https://localhost:4200", "https://localhost:5100")//maybe no local host in prod?
 		.AllowAnyMethod()
 		.AllowAnyHeader()
 		.AllowCredentials();
 	});
 });
-
-//builder.Services.AddHsts(options =>
-//{
-//	options.Preload = true;
-//	options.IncludeSubDomains = true;
-//	options.MaxAge = TimeSpan.FromDays(60); //usually a year
-//											//options.ExcludedHosts.Add("example.com");
-//});
 
 builder.Services.AddAuthentication(options =>
 {
@@ -77,10 +87,6 @@ builder.Services.AddAuthentication(options =>
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
 
-//builder.Services.AddHttpsRedirection(options =>
-//{
-//	options.HttpsPort = 4040;
-//});
 
 //builder.Services.AddResponseCaching; //has to be after AddCors
 builder.Services.AddAuthorization();
@@ -90,7 +96,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlSer
 //Move to new file and reference
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IEncryptionService, EncryptionService>();
+builder.Services.AddScoped<ICsrfEncryptionService, CsrfEncryptionService>();
+builder.Services.AddScoped<IPasswordEncryptionService, PasswordEncryptionService>();
 
 builder.Services.AddControllers(config =>
 {
@@ -113,18 +120,13 @@ if (app.Environment.IsDevelopment())
 	app.UseSwagger();
 	app.UseSwaggerUI();
 }
-else
-{
-	//Use HSTS in azure?
-	//app.UseHsts();
-}
 
-//app.UseHttpsRedirection();
+app.UseRateLimiter();
 
 app.UseCors(AllowedCorsOrigins);
 
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
+app.MapControllers().RequireRateLimiting(SlidingPolicy);
 
 app.Run();

@@ -1,5 +1,8 @@
 ﻿using MyHub.Domain.Authentication.Interfaces;
 using Microsoft.AspNetCore.Mvc.Filters;
+using System.Web.Http;
+using System.Net;
+using Microsoft.AspNetCore.Mvc;
 
 namespace MyHub.Application.Services.Authentication
 {
@@ -11,7 +14,7 @@ namespace MyHub.Application.Services.Authentication
 		{
 			var requestScope = context.HttpContext.RequestServices;
 
-			var _encryptionService = requestScope.GetService(typeof(IEncryptionService)) as IEncryptionService;
+			var _encryptionService = requestScope.GetService(typeof(ICsrfEncryptionService)) as ICsrfEncryptionService;
 			var _configuration = requestScope.GetService(typeof(IConfiguration)) as IConfiguration;
 
 			var hasForgeryCookie = context.HttpContext.Request.Cookies.TryGetValue("X-Forgery-Token", out var forgeryToken);
@@ -20,8 +23,16 @@ namespace MyHub.Application.Services.Authentication
 			{
 				var forgeryTokenDecrypt = _encryptionService?.Decrypt(forgeryToken);
 
-				if (forgeryTokenDecrypt != _configuration?["CSRF:Token"])
-					throw new Exception("CSRF detected.");
+				if (forgeryTokenDecrypt != _configuration?["Cookies:CsrfToken"])
+				{
+					context.HttpContext.Response.Cookies.Delete("X-Access-Token");
+					context.HttpContext.Response.Cookies.Delete("X-Refresh-Token");
+					context.HttpContext.Response.Cookies.Delete("X-Logged-In");
+					context.HttpContext.Response.Cookies.Delete("X-Forgery-Token");
+
+					context.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
+					//signalR logout
+				}
 			}
 		}
 	}
