@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using MyHub.Domain.Users;
+using MyHub.Domain.Users.UsersDto;
 
 namespace MyHub.Domain.DtoMappingProfiles.Authentication
 {
@@ -8,7 +9,8 @@ namespace MyHub.Domain.DtoMappingProfiles.Authentication
 		public UserProfile()
 		{
 			CreateMap<LoginUserDto, User>();
-			CreateMap<User, LoginUserDto>();
+			CreateMap<RegisterUserDto, User>();
+			CreateMap<User, HubUserDto>();
 		}
 	}
 }

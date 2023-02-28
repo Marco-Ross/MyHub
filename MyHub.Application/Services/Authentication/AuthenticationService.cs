@@ -1,9 +1,11 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using AutoMapper;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
+using MyHub.Domain.Users.UsersDto;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -15,30 +17,33 @@ namespace MyHub.Application.Services.Authentication
 		private readonly IConfiguration _configuration;
 		private readonly IUserService _userService;
 		private readonly IPasswordEncryptionService _passwordEncryptionService;
+		private readonly IMapper _mapper;
 
-		public AuthenticationService(IConfiguration configuration, IUserService userService, IPasswordEncryptionService passwordEncryptionService)
+		public AuthenticationService(IConfiguration configuration, IUserService userService, IPasswordEncryptionService passwordEncryptionService, IMapper mapper)
 		{
 			_configuration = configuration;
 			_userService = userService;
 			_passwordEncryptionService = passwordEncryptionService;
+			_mapper = mapper;
 		}
 
-		public User? RegisterUser(User user)
+		public bool RegisterUser(User user)
 		{
 			if (_userService.UserExists(user.Email))
-				return null;
+				return false;
 
 			var hashedPassword = _passwordEncryptionService.HashPassword(user.Password, out var salt);
 
+			user.Id = Guid.NewGuid().ToString();
 			user.Password = hashedPassword;
 			user.Salt = Convert.ToHexString(salt);
 
-			return _userService.RegisterUser(user);
+			return _userService.RegisterUser(user) is not null;
 		}
 
-		public Tokens? AuthenticateUser(string email, string password)
+		public LoginDetails? AuthenticateUser(string email, string password)
 		{
-			var authenticatingUser = _userService.GetUserByEmail(email);
+			var authenticatingUser = _userService.GetFullUserByEmail(email);
 
 			if (authenticatingUser is null)
 				return null;
@@ -50,14 +55,15 @@ namespace MyHub.Application.Services.Authentication
 
 			_userService.UpdateRefreshToken(authenticatingUser, tokens.RefreshToken);
 
-			return tokens;
+			return SetLoginDetails(tokens, authenticatingUser);
 		}
-		public Tokens? RefreshUserAuthentication(string accessToken, string refreshToken)
+
+		public LoginDetails? RefreshUserAuthentication(string accessToken, string refreshToken)
 		{
 			var principle = GetPrincipleFromToken(accessToken);
 			var userId = principle.Claims.First(x => x.Type == JwtRegisteredClaimNames.Sub).Value;
 
-			var user = _userService.GetUser(userId);
+			var user = _userService.GetFullUserById(userId);
 
 			if (user is null)
 				return null;
@@ -73,10 +79,15 @@ namespace MyHub.Application.Services.Authentication
 
 			_userService.UpdateRefreshToken(user, refreshToken);
 
-			return newAccessTokens;
+			return SetLoginDetails(newAccessTokens, user);
 		}
 
-		public Tokens GenerateAccessTokens(User user)
+		private LoginDetails SetLoginDetails(Tokens tokens, User user)
+			=> new() { Tokens = tokens, HubUserDto = _mapper.Map<HubUserDto>(user) };
+
+		public bool RevokeUser(string userId) => _userService.RevokeUser(userId) is not null;
+
+		private Tokens GenerateAccessTokens(User user)
 		{
 			var tokenHandler = new JwtSecurityTokenHandler();
 			var tokenKey = Encoding.UTF8.GetBytes(_configuration["JWT:Key"] ?? string.Empty);
@@ -90,7 +101,7 @@ namespace MyHub.Application.Services.Authentication
 					new Claim(JwtRegisteredClaimNames.Email, user.Email),
 					new Claim(JwtRegisteredClaimNames.Name, user.Username),
 					new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
-					new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())					
+					new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
 				}),
 				Expires = DateTime.UtcNow.AddMinutes(15),
 				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey), SecurityAlgorithms.HmacSha256Signature)
@@ -106,7 +117,7 @@ namespace MyHub.Application.Services.Authentication
 			var tokenKey = Encoding.UTF8.GetBytes(_configuration["JWT:Key"] ?? string.Empty);
 
 			var tokenValidationParameters = new TokenValidationParameters
-			{				
+			{
 				ValidateAudience = true,
 				ValidateIssuer = true,
 				ValidateIssuerSigningKey = true,
