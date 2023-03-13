@@ -1,7 +1,5 @@
 ﻿using MyHub.Domain.Authentication.Interfaces;
 using Microsoft.AspNetCore.Mvc.Filters;
-using System.Web.Http;
-using System.Net;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MyHub.Application.Services.Authentication

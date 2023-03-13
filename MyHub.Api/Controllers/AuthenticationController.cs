@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 
 namespace MyHub.Controllers
 {
-    [Authorize]
+	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
 	public class AuthenticationController : ControllerBase
@@ -51,12 +51,48 @@ namespace MyHub.Controllers
 
 		[AllowAnonymous]
 		[HttpPost("Register")]
-		public IActionResult Register(RegisterUserDto userDto)
+		public async Task<IActionResult> Register(RegisterUserDto userDto)
 		{
-			var isRegisterSuccessful = _authenticationService.RegisterUser(_mapper.Map<User>(userDto));
+			var registerValidation = await _authenticationService.RegisterUser(_mapper.Map<User>(userDto));
 
-			if (!isRegisterSuccessful)
-				return Unauthorized("Email already exists");
+			if (registerValidation.IsInvalid)
+				return BadRequest(registerValidation.ErrorsString);
+
+			return Ok();
+		}
+		
+		[AllowAnonymous]
+		[HttpPost("Register/Complete")]
+		public IActionResult CompleteRegisterEmail(RegisterUserCompleteDto registerUserCompleteDto)
+		{
+			var emailValidation = _authenticationService.VerifyUserEmail(registerUserCompleteDto.UserId, registerUserCompleteDto.RegisterToken);
+
+			if (emailValidation.IsInvalid)
+				return BadRequest(emailValidation.ErrorsString);
+
+			return Ok();
+		}
+		
+		[AllowAnonymous]
+		[HttpPost("ResetPassword")]
+		public async Task<IActionResult> ResetPassword(ResetPasswordDto resetPasswordDto)
+		{
+			var passwordResetValidation = await _authenticationService.ResetPasswordEmail(resetPasswordDto.Email);
+
+			if (passwordResetValidation.IsInvalid)
+				return BadRequest(passwordResetValidation.ErrorsString);
+
+			return Ok();
+		}
+		
+		[AllowAnonymous]
+		[HttpPost("ResetPassword/Complete")]
+		public IActionResult CompleteResetPassword(ResetPasswordCompleteDto resetPasswordCompleteDto)
+		{
+			var passwordResetCompleteValidation = _authenticationService.ResetPassword(resetPasswordCompleteDto.UserId, resetPasswordCompleteDto.Password, resetPasswordCompleteDto.ResetPasswordToken);
+
+			if (passwordResetCompleteValidation.IsInvalid)
+				return BadRequest(passwordResetCompleteValidation.ErrorsString);
 
 			return Ok();
 		}
@@ -65,12 +101,12 @@ namespace MyHub.Controllers
 		[HttpPost("Login")]
 		public IActionResult Login(LoginUserDto userDto)
 		{
-			var loginDetails = _authenticationService.AuthenticateUser(userDto.Email, userDto.Password);
+			var loginValidation = _authenticationService.AuthenticateUser(userDto.Email, userDto.Password);
 
-			if (loginDetails is null)
-				return Unauthorized("Invalid Login Credentials");
+			if (loginValidation.IsInvalid)
+				return BadRequest(loginValidation.ErrorsString);
 
-			SetCookieDetails(loginDetails);
+			SetCookieDetails(loginValidation.ResponseValue);
 
 			return Ok();
 		}
@@ -82,16 +118,16 @@ namespace MyHub.Controllers
 			if (!(Request.Cookies.TryGetValue("X-Access-Token", out var accessToken) && Request.Cookies.TryGetValue("X-Refresh-Token", out var refreshToken)))
 				return BadRequest("Access Token or Refresh Token not set");
 
-			var loginDetails = _authenticationService.RefreshUserAuthentication(accessToken, refreshToken);
+			var refreshValidation = _authenticationService.RefreshUserAuthentication(accessToken, refreshToken);
 
-			if (loginDetails is null)
+			if (refreshValidation.IsInvalid)
 			{
 				RemoveCookies();
 
-				return Forbid("User cannot be authenticated");
+				return Forbid(refreshValidation.ErrorsString);
 			}
 
-			SetCookieDetails(loginDetails);
+			SetCookieDetails(refreshValidation.ResponseValue);
 
 			return Ok();
 		}
@@ -104,7 +140,7 @@ namespace MyHub.Controllers
 			var isUserRevoked= _authenticationService.RevokeUser(userId);
 
 			if(!isUserRevoked)
-				return Forbid("User does not exist");
+				return Forbid("User cannot be revoked.");
 
 			RemoveCookies();
 

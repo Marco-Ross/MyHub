@@ -1,17 +1,17 @@
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using MyHub.Api.AppExtensions;
+using MyHub.Api.AutofacModules;
 using MyHub.Application.Services.Authentication;
-using MyHub.Application.Services.Users;
-using MyHub.Domain;
-using MyHub.Domain.Authentication.Interfaces;
+using MyHub.Domain.Emails;
+using MyHub.Domain.Exceptions;
 using MyHub.Domain.RateLimiterOptions;
-using MyHub.Domain.Users.Interfaces;
-using MyHub.Infrastructure.Repository.EntityFramework;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -20,10 +20,9 @@ const string AllowedCorsOrigins = "_corsOrigins";
 const string SlidingPolicy = "sliding";
 
 var builder = WebApplication.CreateBuilder(args);
-
-//Clear and add logger DI
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
+builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
+var configSettings = builder.Configuration;
+builder.Host.ConfigureContainer<ContainerBuilder>(builder => builder.RegisterModule(new AppModule(configSettings)));
 
 //Rate Limiter
 var rateOptions = new MyRateLimiterOptions();
@@ -90,14 +89,6 @@ JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
 
 //builder.Services.AddResponseCaching; //has to be after AddCors
 builder.Services.AddAuthorization();
-builder.Services.AddAutoMapper(typeof(IDomainAssemblyMarker));
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-//Move to new file and reference
-builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<ICsrfEncryptionService, CsrfEncryptionService>();
-builder.Services.AddScoped<IPasswordEncryptionService, PasswordEncryptionService>();
 
 builder.Services.AddControllers(config =>
 {
@@ -108,9 +99,9 @@ builder.Services.AddControllers(config =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.Configure<AuthEmailSenderOptions>(builder.Configuration.GetSection("AuthEmailSenderOptions"));
 
 ////////////
-
 
 var app = builder.Build();
 
@@ -121,6 +112,7 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
+app.ConfigureExceptionHandler(app.Services.GetRequiredService<ILogger<ExceptionDetails>>());
 app.UseRateLimiter();
 
 app.UseCors(AllowedCorsOrigins);
