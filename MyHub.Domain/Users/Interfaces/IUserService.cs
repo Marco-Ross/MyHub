@@ -4,16 +4,16 @@ namespace MyHub.Domain.Users.Interfaces
 {
     public interface IUserService
     {
-        User RegisterUser(User user, string registerToken);
-		User? RevokeUser(string user);
-		User? RevokeUser(User user);
+		AccessingUser RegisterUser(string email, string username, string password, string registerToken);
+		AccessingUser? RevokeUser(string user);
+		AccessingUser? RevokeUser(AccessingUser user);
 		bool UserExists(string email);
 
-		User? GetFullUserByEmail(string username);
-		User? GetFullUserById(string id);
-		void UpdateRefreshToken(User authenticatingUser, string refreshToken);
-		Validator VerifyUserRegistration(User user, string token);
-		User ResetUserPassword(User user, string resetToken);
-		Validator VerifyUserPasswordReset(User user, string password, string resetPasswordToken);
+		AccessingUser? GetFullAccessingUserByEmail(string username);
+		AccessingUser? GetFullAccessingUserById(string id);
+		void UpdateRefreshToken(AccessingUser authenticatingUser, string refreshToken);
+		Validator VerifyUserRegistration(AccessingUser user, string token);
+		AccessingUser ResetUserPassword(AccessingUser user, string resetToken);
+		Validator VerifyUserPasswordReset(AccessingUser user, string password, string resetPasswordToken);
 	}
 }

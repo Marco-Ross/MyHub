@@ -10,9 +10,9 @@ namespace MyHub.Domain.Emails
 		[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
 		public string? Id { get; set; }
 
-		[ForeignKey("User")]
+		[ForeignKey("AccessingUser")]
 		public string UserId { get; set; } = string.Empty;
-		public User? User { get; set; }
+		public AccessingUser? User { get; set; }
 
 		public string To { get; set; } = string.Empty;
 		public string ToName { get; set; } = string.Empty;
