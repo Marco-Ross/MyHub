@@ -1,10 +1,10 @@
 ﻿using Autofac;
-using MyHub.Domain.Emails.EmailTemplates;
+using MyHub.Domain.Emails;
 using MyHub.Domain.Emails.Interfaces;
 
 namespace MyHub.Application.Services.Emails.EmailConstructors
 {
-	public class EmailConstructorFactory : IEmailConstructorFactory
+    public class EmailConstructorFactory : IEmailConstructorFactory
 	{
 		private readonly IComponentContext _container;
 

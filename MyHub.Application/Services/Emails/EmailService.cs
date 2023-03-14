@@ -19,11 +19,11 @@ namespace MyHub.Application.Services.Emails
 
 		public async Task CreateAndSendEmail<T>(T email) where T : Email
 		{
-			var constructedEmail = _emailConstructorFactory.ConstructNewEmailService<T>().ConstructEmail(email);
+			var content = _emailConstructorFactory.ConstructNewEmailService<T>().ConstructEmail(email);
 
-			await _emailSenderService.SendEmailAsync(constructedEmail);
+			await _emailSenderService.SendEmailAsync(email, content);
 
-			SaveEmail(constructedEmail);
+			SaveEmail(email);
 		}
 
 		private void SaveEmail(Email email)
