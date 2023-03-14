@@ -1,11 +1,10 @@
-﻿using MyHub.Domain.Users;
-using MyHub.Domain.Validation;
+﻿using MyHub.Domain.Validation;
 
 namespace MyHub.Domain.Authentication.Interfaces
 {
 	public interface IAuthenticationService
 	{
-		Task<Validator> RegisterUser(User user);
+		Task<Validator> RegisterUser(string email, string username, string password);
 		Validator<LoginDetails> AuthenticateUser(string username, string password);
 		Validator<LoginDetails> RefreshUserAuthentication(string accessToken, string refreshToken);
 		bool RevokeUser(string userId);

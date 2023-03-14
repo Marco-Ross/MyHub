@@ -8,9 +8,9 @@ namespace MyHub.Domain.DtoMappingProfiles.Authentication
 	{
 		public UserProfile()
 		{
-			CreateMap<LoginUserDto, User>();
-			CreateMap<RegisterUserDto, User>();
-			CreateMap<User, HubUserDto>();
+			CreateMap<LoginUserDto, AccessingUser>();
+			CreateMap<RegisterUserDto, AccessingUser>();
+			CreateMap<AccessingUser, HubUserDto>();
 		}
 	}
 }

@@ -1,4 +1,5 @@
-﻿using MyHub.Domain.Authentication.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Domain.Validation;
@@ -17,33 +18,37 @@ namespace MyHub.Application.Services.Users
 			_encryptionService = encryptionService;
 		}
 
-		public User RegisterUser(User user, string registerToken)
+		public AccessingUser RegisterUser(string email, string username, string password, string registerToken)
 		{
-			var hashedPassword = _encryptionService.HashData(user.Password, out var passwordSalt);
+			var hashedPassword = _encryptionService.HashData(password, out var passwordSalt);
 			var hashedRegisterToken = _encryptionService.HashData(registerToken, out var tokenSalt);
 
-			user.Id = Guid.NewGuid().ToString();
-			user.Password = hashedPassword;
-			user.PasswordSalt = Convert.ToHexString(passwordSalt);
-			user.RegisterToken = hashedRegisterToken;
-			user.RegisterTokenSalt = Convert.ToHexString(tokenSalt);
-			user.RegisterTokenExpireDate = DateTime.Now.AddHours(3);
+			var user = new AccessingUser
+			{
+				User = new User { Id = Guid.NewGuid().ToString(), Username = username },
+				Email = email,
+				Password = hashedPassword,
+				PasswordSalt = Convert.ToHexString(passwordSalt),
+				RegisterToken = hashedRegisterToken,
+				RegisterTokenSalt = Convert.ToHexString(tokenSalt),
+				RegisterTokenExpireDate = DateTime.Now.AddHours(3)
+			};
 
 			var savedUser = _applicationDbContext.Add(user);
-			
+
 			_applicationDbContext.SaveChanges();
 
 			return savedUser.Entity;
 		}
 
-		public Validator VerifyUserRegistration(User user, string token)
+		public Validator VerifyUserRegistration(AccessingUser user, string token)
 		{
-			if(string.IsNullOrWhiteSpace(user.RegisterToken))
+			if (string.IsNullOrWhiteSpace(user.RegisterToken))
 				return new Validator().AddError("Email verification link invalid.");
 
 			if (!_encryptionService.VerifyData(token, user.RegisterToken, user.RegisterTokenSalt))
 				return new Validator().AddError("Cannot register user with invalid link.");
-			
+
 			if (user.RegisterTokenExpireDate < DateTime.Now)
 				return new Validator().AddError("Email verification link has expired.");
 
@@ -58,10 +63,10 @@ namespace MyHub.Application.Services.Users
 			return new Validator();
 		}
 
-		public User ResetUserPassword(User user, string resetToken)
+		public AccessingUser ResetUserPassword(AccessingUser user, string resetToken)
 		{
 			var hashedResetToken = _encryptionService.HashData(resetToken, out var tokenSalt);
-			
+
 			user.ResetPasswordToken = hashedResetToken;
 			user.ResetPasswordTokenSalt = Convert.ToHexString(tokenSalt);
 			user.ResetPasswordTokenExpireDate = DateTime.Now.AddHours(3);
@@ -71,7 +76,7 @@ namespace MyHub.Application.Services.Users
 			return user;
 		}
 
-		public Validator VerifyUserPasswordReset(User user, string password, string resetPasswordToken)
+		public Validator VerifyUserPasswordReset(AccessingUser user, string password, string resetPasswordToken)
 		{
 			if (string.IsNullOrWhiteSpace(user.ResetPasswordToken))
 				return new Validator().AddError("Reset password link invalid.");
@@ -94,9 +99,9 @@ namespace MyHub.Application.Services.Users
 			return new Validator();
 		}
 
-		public User? RevokeUser(string userId) => RevokeUser(GetFullUserById(userId));
+		public AccessingUser? RevokeUser(string userId) => RevokeUser(GetFullAccessingUserById(userId));
 
-		public User? RevokeUser(User? user)
+		public AccessingUser? RevokeUser(AccessingUser? user)
 		{
 			if (user == null)
 				return null;
@@ -108,13 +113,13 @@ namespace MyHub.Application.Services.Users
 			return user;
 		}
 
-		public bool UserExists(string email) => _applicationDbContext.Users.Any(x => x.Email == email);
+		public bool UserExists(string email) => _applicationDbContext.AccessingUsers.Any(x => x.Email == email);
 
-		public User? GetFullUserByEmail(string email) => _applicationDbContext.Users.SingleOrDefault(x => x.Email == email);
+		public AccessingUser? GetFullAccessingUserByEmail(string email) => _applicationDbContext.AccessingUsers.Include(x => x.User).SingleOrDefault(x => x.Email == email);
 
-		public User? GetFullUserById(string id) => _applicationDbContext.Find<User>(id);
+		public AccessingUser? GetFullAccessingUserById(string id) => _applicationDbContext.AccessingUsers.Include(x => x.User).SingleOrDefault(x => x.Id == id);
 
-		public void UpdateRefreshToken(User authenticatingUser, string refreshToken)
+		public void UpdateRefreshToken(AccessingUser authenticatingUser, string refreshToken)
 		{
 			authenticatingUser.RefreshToken = refreshToken;
 

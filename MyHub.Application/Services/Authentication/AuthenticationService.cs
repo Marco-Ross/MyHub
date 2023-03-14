@@ -32,21 +32,20 @@ namespace MyHub.Application.Services.Authentication
 			_emailService = emailService;
 		}
 
-		public async Task<Validator> RegisterUser(User user)
+		public async Task<Validator> RegisterUser(string email, string username, string password)
 		{
-			var x = _configuration["AuthEmailSenderOptions:SendGridKey"];
-			if (_userService.UserExists(user.Email))
+			if (_userService.UserExists(email))
 				return new Validator().AddError("Email address already exists.");
 
 			var registerToken = Guid.NewGuid().ToString();
 
-			var registeredUser = _userService.RegisterUser(user, registerToken);
+			var registeredUser = _userService.RegisterUser(email, username, password, registerToken);
 
 			await _emailService.CreateAndSendEmail(new AccountRegisterEmail
 			{
 				UserId = registeredUser.Id,
 				To = registeredUser.Email,
-				ToName = registeredUser.Username,
+				ToName = registeredUser.User.Username,
 				Subject = "Account Registration",
 				RegisterToken = registerToken,
 				ClientDomainAddress = _configuration["Domain:Client"] ?? string.Empty
@@ -57,7 +56,7 @@ namespace MyHub.Application.Services.Authentication
 
 		public Validator VerifyUserEmail(string userId, string token)
 		{
-			var user = _userService.GetFullUserById(userId);
+			var user = _userService.GetFullAccessingUserById(userId);
 			if (user == null) return new Validator().AddError("Invalid user Id.");
 
 			return _userService.VerifyUserRegistration(user, token);
@@ -65,7 +64,7 @@ namespace MyHub.Application.Services.Authentication
 
 		public async Task<Validator> ResetPasswordEmail(string email)
 		{
-			var user = _userService.GetFullUserByEmail(email);
+			var user = _userService.GetFullAccessingUserByEmail(email);
 
 			if (user is null) 
 				return new Validator().AddError("Email address does not exist.");
@@ -81,7 +80,7 @@ namespace MyHub.Application.Services.Authentication
 			{
 				UserId = resetUser.Id,
 				To = resetUser.Email,
-				ToName = resetUser.Username,
+				ToName = resetUser.User.Username,
 				Subject = "Password Recovery",
 				ResetPasswordToken = resetToken,
 				ClientDomainAddress = _configuration["Domain:Client"] ?? string.Empty
@@ -92,7 +91,7 @@ namespace MyHub.Application.Services.Authentication
 
 		public Validator ResetPassword(string userId, string password, string resetPasswordToken)
 		{
-			var user = _userService.GetFullUserById(userId);
+			var user = _userService.GetFullAccessingUserById(userId);
 			if (user is null) return new Validator().AddError("Invalid user Id.");
 
 			return _userService.VerifyUserPasswordReset(user, password, resetPasswordToken);
@@ -100,7 +99,7 @@ namespace MyHub.Application.Services.Authentication
 
 		public Validator<LoginDetails> AuthenticateUser(string email, string password)
 		{
-			var authenticatingUser = _userService.GetFullUserByEmail(email);
+			var authenticatingUser = _userService.GetFullAccessingUserByEmail(email);
 
 			if (authenticatingUser is null || !_encryptionService.VerifyData(password, authenticatingUser.Password, authenticatingUser.PasswordSalt))
 				return new Validator<LoginDetails>().AddError("Invalid Login Credentials.");
@@ -120,7 +119,7 @@ namespace MyHub.Application.Services.Authentication
 			var principle = GetPrincipleFromToken(accessToken);
 			var userId = principle.Claims.First(x => x.Type == JwtRegisteredClaimNames.Sub).Value;
 
-			var user = _userService.GetFullUserById(userId);
+			var user = _userService.GetFullAccessingUserById(userId);
 
 			if (user is null)
 				return new Validator<LoginDetails>().AddError("Invalid user Id.");
@@ -139,12 +138,12 @@ namespace MyHub.Application.Services.Authentication
 			return new Validator<LoginDetails>().Response(SetLoginDetails(newAccessTokens, user));
 		}
 
-		private LoginDetails SetLoginDetails(Tokens tokens, User user)
+		private LoginDetails SetLoginDetails(Tokens tokens, AccessingUser user)
 			=> new() { Tokens = tokens, HubUserDto = _mapper.Map<HubUserDto>(user) };
 
 		public bool RevokeUser(string userId) => _userService.RevokeUser(userId) is not null;
 
-		private Tokens GenerateAccessTokens(User user)
+		private Tokens GenerateAccessTokens(AccessingUser user)
 		{
 			var tokenHandler = new JwtSecurityTokenHandler();
 			var tokenKey = Encoding.UTF8.GetBytes(_configuration["JWT:Key"] ?? string.Empty);
@@ -156,7 +155,7 @@ namespace MyHub.Application.Services.Authentication
 				{
 					new Claim(JwtRegisteredClaimNames.Sub, user.Id),
 					new Claim(JwtRegisteredClaimNames.Email, user.Email),
-					new Claim(JwtRegisteredClaimNames.Name, user.Username),
+					new Claim(JwtRegisteredClaimNames.Name, user.User.Username),
 					new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
 					new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
 				}),

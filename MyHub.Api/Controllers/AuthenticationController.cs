@@ -1,10 +1,8 @@
-using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
-using MyHub.Domain.Users;
 using MyHub.Domain.Users.UsersDto;
 using Newtonsoft.Json;
 
@@ -15,14 +13,12 @@ namespace MyHub.Controllers
 	[Route("[controller]")]
 	public class AuthenticationController : ControllerBase
 	{
-		private readonly IMapper _mapper;
 		private readonly IConfiguration _configuration;
 		private readonly IAuthenticationService _authenticationService;
 		private readonly ICsrfEncryptionService _encryptionService;
 
-		public AuthenticationController(IMapper mapper, IConfiguration configuration, IAuthenticationService authenticationService, ICsrfEncryptionService encryptionService)
+		public AuthenticationController(IConfiguration configuration, IAuthenticationService authenticationService, ICsrfEncryptionService encryptionService)
 		{
-			_mapper = mapper;
 			_configuration = configuration;
 			_authenticationService = authenticationService;
 			_encryptionService = encryptionService;
@@ -53,7 +49,7 @@ namespace MyHub.Controllers
 		[HttpPost("Register")]
 		public async Task<IActionResult> Register(RegisterUserDto userDto)
 		{
-			var registerValidation = await _authenticationService.RegisterUser(_mapper.Map<User>(userDto));
+			var registerValidation = await _authenticationService.RegisterUser(userDto.Email, userDto.Username, userDto.Password);
 
 			if (registerValidation.IsInvalid)
 				return BadRequest(registerValidation.ErrorsString);
