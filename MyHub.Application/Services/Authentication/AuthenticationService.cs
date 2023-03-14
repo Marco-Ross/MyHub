@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
-using MyHub.Domain.Emails.EmailTemplates;
+using MyHub.Domain.Emails;
 using MyHub.Domain.Emails.Interfaces;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
@@ -37,7 +37,7 @@ namespace MyHub.Application.Services.Authentication
 			if (_userService.UserExists(email))
 				return new Validator().AddError("Email address already exists.");
 
-			var registerToken = Guid.NewGuid().ToString();
+			var registerToken = _encryptionService.GenerateSecureToken();
 
 			var registeredUser = _userService.RegisterUser(email, username, password, registerToken);
 
@@ -72,7 +72,7 @@ namespace MyHub.Application.Services.Authentication
 			if (user.ResetPasswordTokenExpireDate.HasValue && user.ResetPasswordTokenExpireDate > DateTime.Now)
 				return new Validator().AddError("A valid reset password link has already been sent.");
 
-			var resetToken = Guid.NewGuid().ToString();
+			var resetToken = _encryptionService.GenerateSecureToken();
 
 			var resetUser = _userService.ResetUserPassword(user, resetToken);
 
@@ -165,7 +165,7 @@ namespace MyHub.Application.Services.Authentication
 
 			var token = tokenHandler.CreateToken(tokenDescriptor);
 
-			return new Tokens { Token = tokenHandler.WriteToken(token), RefreshToken = Guid.NewGuid().ToString() };
+			return new Tokens { Token = tokenHandler.WriteToken(token), RefreshToken = _encryptionService.GenerateSecureToken() };
 		}
 
 		private ClaimsPrincipal GetPrincipleFromToken(string token)

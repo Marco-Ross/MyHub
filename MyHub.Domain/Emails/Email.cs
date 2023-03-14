@@ -19,7 +19,7 @@ namespace MyHub.Domain.Emails
 		public string From { get; set; } = "noreply@marcoshub.com";
 		public string FromName { get; set; } = "Marco's Hub";
 		public string Subject { get; set; } = string.Empty;
-		public string Template { get; set; } = "DefaultEmailTemplate.html";
+		public string TemplateName { get; set; } = "DefaultEmailTemplate.html";
 
 		[NotMapped]
 		public string ClientDomainAddress { get; set; } = string.Empty;

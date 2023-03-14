@@ -17,22 +17,22 @@ namespace MyHub.Application.Services.Emails
 			_options = options.Value;
 		}
 
-		public async Task SendEmailAsync(Email email)
+		public async Task SendEmailAsync(Email email, string content)
 		{
 			if (string.IsNullOrWhiteSpace(_options.SendGridKey))
 				throw new Exception("No Email SendGridKey");
 
-			await Execute(_options.SendGridKey, email);
+			await Execute(_options.SendGridKey, email, content);
 		}
 
-		private async Task Execute(string sendGridKey, Email email)
+		private async Task Execute(string sendGridKey, Email email, string content)
 		{
 			var client = new SendGridClient(sendGridKey);
 			var message = new SendGridMessage()
 			{
 				From = new EmailAddress(email.From, email.FromName),
 				Subject = email.Subject,
-				HtmlContent = email.Template
+				HtmlContent = content
 			};
 
 			message.AddTo(new EmailAddress(email.To));

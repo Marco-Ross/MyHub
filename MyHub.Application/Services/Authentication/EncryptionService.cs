@@ -37,5 +37,15 @@ namespace MyHub.Application.Services.Authentication
 			var hashToCompare = HashData(data, Convert.FromHexString(salt));
 			return hashToCompare.SequenceEqual(Convert.FromHexString(hashedData));
 		}
+
+		public string GenerateSecureToken()
+		{
+			var key = new byte[32];
+			RandomNumberGenerator.Create().GetBytes(key);
+			var base64Secret = Convert.ToBase64String(key);
+
+			// make safe for url
+			return base64Secret.TrimEnd('=').Replace('+', '-').Replace('/', '_');
+		}
 	}
 }
