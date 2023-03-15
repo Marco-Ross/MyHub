@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MyHub.Api.AppExtensions;
 using MyHub.Api.AutofacModules;
@@ -12,6 +13,7 @@ using MyHub.Application.Services.Authentication;
 using MyHub.Domain.Emails;
 using MyHub.Domain.Exceptions;
 using MyHub.Domain.RateLimiterOptions;
+using MyHub.Infrastructure.Repository.EntityFramework;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -112,7 +114,16 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
-app.ConfigureExceptionHandler(app.Services.GetRequiredService<ILogger<ExceptionDetails>>());
+using (var scope = app.Services.CreateScope())
+{
+	var services = scope.ServiceProvider;
+
+	var context = services.GetRequiredService<ApplicationDbContext>();
+	context.Database.Migrate();
+
+	app.ConfigureExceptionHandler(services.GetRequiredService<ILogger<ExceptionDetails>>());
+}
+
 app.UseRateLimiter();
 
 app.UseCors(AllowedCorsOrigins);
