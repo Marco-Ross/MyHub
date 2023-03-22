@@ -9,7 +9,7 @@ namespace MyHub.Domain.DtoMappingProfiles.Authentication
 		public UserProfile()
 		{
 			CreateMap<LoginUserDto, AccessingUser>();
-			CreateMap<RegisterUserDto, AccessingUser>();
+			CreateMap<RegisterUserDto, AccessingUser>().ForPath(x => x.User.Username, m => m.MapFrom(u => u.Username));
 			CreateMap<AccessingUser, HubUserDto>();
 		}
 	}

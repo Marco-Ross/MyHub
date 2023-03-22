@@ -1,5 +1,6 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
@@ -9,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MyHub.Api.AppExtensions;
 using MyHub.Api.AutofacModules;
+using MyHub.Application;
 using MyHub.Application.Services.Authentication;
 using MyHub.Domain.Emails;
 using MyHub.Domain.Exceptions;
@@ -102,6 +104,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.Configure<AuthEmailSenderOptions>(builder.Configuration.GetSection("AuthEmailSenderOptions"));
+builder.Services.AddValidatorsFromAssemblyContaining<IApplicationAssemblyMarker>();
 
 ////////////
 

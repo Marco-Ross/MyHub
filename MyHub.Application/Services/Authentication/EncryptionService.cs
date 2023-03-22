@@ -14,6 +14,9 @@ namespace MyHub.Application.Services.Authentication
 
 		public string HashData(string data, out byte[] salt) 
 		{
+			if(string.IsNullOrWhiteSpace(data))
+				throw new ArgumentNullException(nameof(data));
+
 			salt = RandomNumberGenerator.GetBytes(KeySize);
 
 			return Convert.ToHexString(HashData(data, salt));
@@ -34,6 +37,12 @@ namespace MyHub.Application.Services.Authentication
 
 		public bool VerifyData(string data, string hashedData, string salt)
 		{
+			if (string.IsNullOrWhiteSpace(data))
+				throw new ArgumentNullException(nameof(data));
+			
+			if (string.IsNullOrWhiteSpace(data))
+				throw new ArgumentNullException(nameof(data));
+
 			var hashToCompare = HashData(data, Convert.FromHexString(salt));
 			return hashToCompare.SequenceEqual(Convert.FromHexString(hashedData));
 		}

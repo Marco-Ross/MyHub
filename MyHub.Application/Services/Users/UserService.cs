@@ -34,7 +34,7 @@ namespace MyHub.Application.Services.Users
 				RegisterTokenExpireDate = DateTime.Now.AddHours(3)
 			};
 
-			var savedUser = _applicationDbContext.Add(user);
+			var savedUser = _applicationDbContext.AccessingUsers.Add(user);
 
 			_applicationDbContext.SaveChanges();
 
@@ -49,7 +49,7 @@ namespace MyHub.Application.Services.Users
 			if (!_encryptionService.VerifyData(token, user.RegisterToken, user.RegisterTokenSalt))
 				return new Validator().AddError("Cannot register user with invalid link.");
 
-			if (user.RegisterTokenExpireDate < DateTime.Now)
+			if (user.RegisterTokenExpireDate is null || user.RegisterTokenExpireDate < DateTime.Now)
 				return new Validator().AddError("Email verification link has expired.");
 
 			user.IsEmailVerified = true;
@@ -84,7 +84,7 @@ namespace MyHub.Application.Services.Users
 			if (!_encryptionService.VerifyData(resetPasswordToken, user.ResetPasswordToken, user.ResetPasswordTokenSalt))
 				return new Validator().AddError("Cannot register user with invalid link.");
 
-			if (user.ResetPasswordTokenExpireDate < DateTime.Now)
+			if (user.ResetPasswordTokenExpireDate is null || user.ResetPasswordTokenExpireDate < DateTime.Now)
 				return new Validator().AddError("Reset password link has expired.");
 
 			user.Password = _encryptionService.HashData(password, out var passwordSalt);
@@ -115,7 +115,11 @@ namespace MyHub.Application.Services.Users
 
 		public bool UserExists(string email) => _applicationDbContext.AccessingUsers.Any(x => x.Email == email);
 
-		public AccessingUser? GetFullAccessingUserByEmail(string email) => _applicationDbContext.AccessingUsers.Include(x => x.User).SingleOrDefault(x => x.Email == email);
+		public AccessingUser? GetFullAccessingUserByEmail(string email)
+		{
+			if (string.IsNullOrWhiteSpace(email)) return null;
+			return _applicationDbContext.AccessingUsers.Include(x => x.User).SingleOrDefault(x => x.Email == email);
+		}
 
 		public AccessingUser? GetFullAccessingUserById(string id) => _applicationDbContext.AccessingUsers.Include(x => x.User).SingleOrDefault(x => x.Id == id);
 

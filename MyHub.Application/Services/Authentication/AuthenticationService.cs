@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using MyHub.Domain.Authentication;
@@ -9,37 +10,42 @@ using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Domain.Users.UsersDto;
 using MyHub.Domain.Validation;
+using MyHub.Domain.Validation.FluentValidators;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
 namespace MyHub.Application.Services.Authentication
 {
-	public class AuthenticationService : IAuthenticationService
+    public class AuthenticationService : IAuthenticationService
 	{
 		private readonly IConfiguration _configuration;
 		private readonly IUserService _userService;
 		private readonly IEncryptionService _encryptionService;
 		private readonly IMapper _mapper;
 		private readonly IEmailService _emailService;
+		private readonly IValidator<UserRegisterValidator> _registerValidator;
 
-		public AuthenticationService(IConfiguration configuration, IUserService userService, IEncryptionService passwordEncryptionService, IMapper mapper, IEmailService emailService)
+		public AuthenticationService(IConfiguration configuration, IUserService userService, IEncryptionService passwordEncryptionService, IMapper mapper, IEmailService emailService, IValidator<UserRegisterValidator> registerValidator)
 		{
 			_configuration = configuration;
 			_userService = userService;
 			_encryptionService = passwordEncryptionService;
 			_mapper = mapper;
 			_emailService = emailService;
+			_registerValidator = registerValidator;
 		}
 
-		public async Task<Validator> RegisterUser(string email, string username, string password)
+		public async Task<Validator> RegisterUser(AccessingUser accessingUser)
 		{
-			if (_userService.UserExists(email))
-				return new Validator().AddError("Email address already exists.");
+			var validation = _registerValidator.Validate(new UserRegisterValidator(accessingUser));
+
+			if (!validation.IsValid)
+				return new Validator().AddError(string.Join(",", validation.Errors));
 
 			var registerToken = _encryptionService.GenerateSecureToken();
 
-			var registeredUser = _userService.RegisterUser(email, username, password, registerToken);
+			var registeredUser = _userService.RegisterUser(accessingUser.Email, accessingUser.User.Username, accessingUser.Password, registerToken);
 
 			await _emailService.CreateAndSendEmail(new AccountRegisterEmail
 			{
@@ -58,6 +64,7 @@ namespace MyHub.Application.Services.Authentication
 		{
 			var user = _userService.GetFullAccessingUserById(userId);
 			if (user == null) return new Validator().AddError("Invalid user Id.");
+			if (string.IsNullOrWhiteSpace(token)) return new Validator().AddError("Invalid user token.");
 
 			return _userService.VerifyUserRegistration(user, token);
 		}
@@ -93,6 +100,8 @@ namespace MyHub.Application.Services.Authentication
 		{
 			var user = _userService.GetFullAccessingUserById(userId);
 			if (user is null) return new Validator().AddError("Invalid user Id.");
+			if (string.IsNullOrWhiteSpace(password)) return new Validator().AddError("Invalid password.");
+			if (string.IsNullOrWhiteSpace(resetPasswordToken)) return new Validator().AddError("Invalid token.");
 
 			return _userService.VerifyUserPasswordReset(user, password, resetPasswordToken);
 		}
@@ -116,6 +125,12 @@ namespace MyHub.Application.Services.Authentication
 
 		public Validator<LoginDetails> RefreshUserAuthentication(string accessToken, string refreshToken)
 		{
+			if(string.IsNullOrWhiteSpace(accessToken))
+				return new Validator<LoginDetails>().AddError("Access Token is invalid.");
+			
+			if(string.IsNullOrWhiteSpace(refreshToken))
+				return new Validator<LoginDetails>().AddError("Refresh Token is invalid.");
+
 			var principle = GetPrincipleFromToken(accessToken);
 			var userId = principle.Claims.First(x => x.Type == JwtRegisteredClaimNames.Sub).Value;
 
@@ -186,9 +201,8 @@ namespace MyHub.Application.Services.Authentication
 			var tokenHandler = new JwtSecurityTokenHandler();
 			var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
 
-			var jwtSecurityToken = securityToken as JwtSecurityToken;
-			if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-				throw new SecurityTokenException("Invalid token");
+			if (securityToken is not JwtSecurityToken jwtSecurityToken || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+				throw new SecurityTokenException("Invalid token.");
 
 			return principal;
 		}
