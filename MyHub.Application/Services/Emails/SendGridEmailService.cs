@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using FluentValidation;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MyHub.Domain.Emails;
 using MyHub.Domain.Emails.Interfaces;
@@ -11,16 +12,26 @@ namespace MyHub.Application.Services.Emails
 	{
 		private readonly ILogger _logger;
 		private readonly AuthEmailSenderOptions _options;
-		public SendGridEmailService(ILogger<SendGridEmailService> logger, IOptions<AuthEmailSenderOptions> options)
+		private readonly IValidator<Email> _emailValidator;
+		public SendGridEmailService(ILogger<SendGridEmailService> logger, IOptions<AuthEmailSenderOptions> options, IValidator<Email> emailValidator)
 		{
 			_logger = logger;
 			_options = options.Value;
+			_emailValidator = emailValidator;
 		}
 
 		public async Task SendEmailAsync(Email email, string content)
 		{
 			if (string.IsNullOrWhiteSpace(_options.SendGridKey))
-				throw new Exception("No Email SendGridKey");
+				throw new NullReferenceException("No Email SendGridKey.");
+
+			if (string.IsNullOrWhiteSpace(content))
+				throw new NullReferenceException("No Email content specified.");
+
+			var validation = _emailValidator.Validate(email);
+
+			if (!validation.IsValid)
+				throw new ValidationException(string.Join(",", validation.Errors));
 
 			await Execute(_options.SendGridKey, email, content);
 		}
@@ -35,7 +46,7 @@ namespace MyHub.Application.Services.Emails
 				HtmlContent = content
 			};
 
-			message.AddTo(new EmailAddress(email.To));
+			message.AddTo(new EmailAddress(email.To, email.ToName));
 
 			message.SetClickTracking(false, false);
 
