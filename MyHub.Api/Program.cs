@@ -49,7 +49,9 @@ builder.Services.AddCors(options =>
 {
 	options.AddPolicy(name: AllowedCorsOrigins, policy =>
 	{
-		policy.WithOrigins("https://marcoshub.com", "https://localhost:4200", "https://localhost:5100")//maybe no local host in prod?
+		policy.WithOrigins(builder.Configuration["CorsOrigin:DefaultOrigin"] ?? string.Empty)
+		.SetIsOriginAllowedToAllowWildcardSubdomains() 
+		.SetPreflightMaxAge(TimeSpan.FromMinutes(10))
 		.AllowAnyMethod()
 		.AllowAnyHeader()
 		.AllowCredentials();

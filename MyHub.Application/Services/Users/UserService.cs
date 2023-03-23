@@ -49,7 +49,7 @@ namespace MyHub.Application.Services.Users
 			if (!_encryptionService.VerifyData(token, user.RegisterToken, user.RegisterTokenSalt))
 				return new Validator().AddError("Cannot register user with invalid link.");
 
-			if (user.RegisterTokenExpireDate is null || user.RegisterTokenExpireDate < DateTime.Now)
+			if (user.RegisterTokenExpireDate is null || user.RegisterTokenExpireDate < DateTime.Now)//use an IClock and inject date for tests.
 				return new Validator().AddError("Email verification link has expired.");
 
 			user.IsEmailVerified = true;
