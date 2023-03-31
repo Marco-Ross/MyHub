@@ -1,6 +1,9 @@
 ﻿using MyHub.Domain.Authentication.Interfaces;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc;
+using MyHub.Domain.Authentication;
+using Microsoft.Extensions.Options;
+using MyHub.Domain.ConfigurationOptions.Authentication;
 
 namespace MyHub.Application.Services.Authentication
 {
@@ -13,20 +16,20 @@ namespace MyHub.Application.Services.Authentication
 			var requestScope = context.HttpContext.RequestServices;
 
 			var _encryptionService = requestScope.GetService(typeof(ICsrfEncryptionService)) as ICsrfEncryptionService;
-			var _configuration = requestScope.GetService(typeof(IConfiguration)) as IConfiguration;
+			var _configuration = requestScope.GetService(typeof(IOptions<AuthenticationOptions>)) as IOptions<AuthenticationOptions>;
 
-			var hasForgeryCookie = context.HttpContext.Request.Cookies.TryGetValue("X-Forgery-Token", out var forgeryToken);
+			var hasForgeryCookie = context.HttpContext.Request.Cookies.TryGetValue(AuthConstants.ForgeryTokenHeader, out var forgeryToken);
 
 			if (hasForgeryCookie)
 			{
 				var forgeryTokenDecrypt = _encryptionService?.Decrypt(forgeryToken);
 
-				if (forgeryTokenDecrypt != _configuration?["Cookies:CsrfToken"])
+				if (forgeryTokenDecrypt != _configuration?.Value.Cookies.CsrfToken)
 				{
-					context.HttpContext.Response.Cookies.Delete("X-Access-Token");
-					context.HttpContext.Response.Cookies.Delete("X-Refresh-Token");
-					context.HttpContext.Response.Cookies.Delete("X-Logged-In");
-					context.HttpContext.Response.Cookies.Delete("X-Forgery-Token");
+					context.HttpContext.Response.Cookies.Delete(AuthConstants.AccessTokenHeader);
+					context.HttpContext.Response.Cookies.Delete(AuthConstants.RefreshTokenHeader);
+					context.HttpContext.Response.Cookies.Delete(AuthConstants.LoggedInHeader);
+					context.HttpContext.Response.Cookies.Delete(AuthConstants.ForgeryTokenHeader);
 
 					context.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
 					//signalR logout

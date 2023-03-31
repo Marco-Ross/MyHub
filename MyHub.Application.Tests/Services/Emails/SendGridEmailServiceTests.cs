@@ -2,16 +2,17 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MyHub.Application.Services.Emails;
+using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.Emails;
 using MyHub.Domain.Emails.Interfaces;
 
 namespace MyHub.Application.Tests.Services.Emails
 {
-	public class SendGridEmailServiceTests : ApplicationTestBase
+    public class SendGridEmailServiceTests : ApplicationTestBase
 	{
 		private readonly IEmailSenderService _emailSenderService;
 		private readonly Mock<ILogger<SendGridEmailService>> _logger = new();
-		private readonly IOptions<AuthEmailSenderOptions> _options = Options.Create(new AuthEmailSenderOptions { SendGridKey = "Key" });
+		private readonly IOptions<AuthenticationOptions> _options = Options.Create(new AuthenticationOptions { AuthEmailSenderOptions = new AuthEmailSenderOptions { SendGridKey = "Key" } });
 		private readonly Mock<IValidator<Email>> _emailValidator = new();
 
 		public SendGridEmailServiceTests()

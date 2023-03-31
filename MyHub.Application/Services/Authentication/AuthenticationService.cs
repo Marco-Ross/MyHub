@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
 using FluentValidation;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
+using MyHub.Domain.ConfigurationOptions.Authentication;
+using MyHub.Domain.ConfigurationOptions.Domain;
 using MyHub.Domain.Emails;
 using MyHub.Domain.Emails.Interfaces;
 using MyHub.Domain.Users;
@@ -17,18 +19,20 @@ using System.Text;
 
 namespace MyHub.Application.Services.Authentication
 {
-    public class AuthenticationService : IAuthenticationService
+	public class AuthenticationService : IAuthenticationService
 	{
-		private readonly IConfiguration _configuration;
+		private readonly DomainOptions _domainOptions;
+		private readonly AuthenticationOptions _authOptions;
 		private readonly IUserService _userService;
 		private readonly IEncryptionService _encryptionService;
 		private readonly IMapper _mapper;
 		private readonly IEmailService _emailService;
 		private readonly IValidator<UserRegisterValidator> _registerValidator;
 
-		public AuthenticationService(IConfiguration configuration, IUserService userService, IEncryptionService passwordEncryptionService, IMapper mapper, IEmailService emailService, IValidator<UserRegisterValidator> registerValidator)
+		public AuthenticationService(IOptions<DomainOptions> domainOptions, IOptions<AuthenticationOptions> authOptions, IUserService userService, IEncryptionService passwordEncryptionService, IMapper mapper, IEmailService emailService, IValidator<UserRegisterValidator> registerValidator)
 		{
-			_configuration = configuration;
+			_authOptions = authOptions.Value;
+			_domainOptions = domainOptions.Value;
 			_userService = userService;
 			_encryptionService = passwordEncryptionService;
 			_mapper = mapper;
@@ -54,7 +58,7 @@ namespace MyHub.Application.Services.Authentication
 				ToName = registeredUser.User.Username,
 				Subject = "Account Registration",
 				RegisterToken = registerToken,
-				ClientDomainAddress = _configuration["Domain:Client"] ?? string.Empty
+				ClientDomainAddress = _domainOptions.Client
 			});
 
 			return new Validator();
@@ -90,7 +94,7 @@ namespace MyHub.Application.Services.Authentication
 				ToName = resetUser.User.Username,
 				Subject = "Password Recovery",
 				ResetPasswordToken = resetToken,
-				ClientDomainAddress = _configuration["Domain:Client"] ?? string.Empty
+				ClientDomainAddress = _domainOptions.Client
 			});
 
 			return new Validator();
@@ -132,6 +136,10 @@ namespace MyHub.Application.Services.Authentication
 				return new Validator<LoginDetails>().AddError("Refresh Token is invalid.");
 
 			var principle = GetPrincipleFromToken(accessToken);
+
+			if(principle is null)
+				return new Validator<LoginDetails>().AddError("Token has been invalidated.");
+
 			var userId = principle.Claims.First(x => x.Type == JwtRegisteredClaimNames.Sub).Value;
 
 			var user = _userService.GetFullAccessingUserById(userId);
@@ -148,7 +156,7 @@ namespace MyHub.Application.Services.Authentication
 
 			var newAccessTokens = GenerateAccessTokens(user);
 
-			_userService.UpdateRefreshToken(user, refreshToken);
+			_userService.UpdateRefreshToken(user, newAccessTokens.RefreshToken);
 
 			return new Validator<LoginDetails>().Response(SetLoginDetails(newAccessTokens, user));
 		}
@@ -161,11 +169,11 @@ namespace MyHub.Application.Services.Authentication
 		private Tokens GenerateAccessTokens(AccessingUser user)
 		{
 			var tokenHandler = new JwtSecurityTokenHandler();
-			var tokenKey = Encoding.UTF8.GetBytes(_configuration["JWT:Key"] ?? string.Empty);
+			var tokenKey = Encoding.UTF8.GetBytes(_authOptions.JWT.Key);
 			var tokenDescriptor = new SecurityTokenDescriptor
 			{
-				Audience = _configuration["JWT:Audience"],
-				Issuer = _configuration["JWT:Issuer"],
+				Audience = _authOptions.JWT.Audience,
+				Issuer = _authOptions.JWT.Issuer,
 				Subject = new ClaimsIdentity(new Claim[]
 				{
 					new Claim(JwtRegisteredClaimNames.Sub, user.Id),
@@ -183,9 +191,9 @@ namespace MyHub.Application.Services.Authentication
 			return new Tokens { Token = tokenHandler.WriteToken(token), RefreshToken = _encryptionService.GenerateSecureToken() };
 		}
 
-		private ClaimsPrincipal GetPrincipleFromToken(string token)
+		private ClaimsPrincipal? GetPrincipleFromToken(string token)
 		{
-			var tokenKey = Encoding.UTF8.GetBytes(_configuration["JWT:Key"] ?? string.Empty);
+			var tokenKey = Encoding.UTF8.GetBytes(_authOptions.JWT.Key);
 
 			var tokenValidationParameters = new TokenValidationParameters
 			{
@@ -193,18 +201,25 @@ namespace MyHub.Application.Services.Authentication
 				ValidateIssuer = true,
 				ValidateIssuerSigningKey = true,
 				ValidateLifetime = false,
-				ValidAudience = _configuration["JWT:Audience"],
-				ValidIssuer = _configuration["JWT:Issuer"],
+				ValidAudience = _authOptions.JWT.Audience,
+				ValidIssuer = _authOptions.JWT.Issuer,
 				IssuerSigningKey = new SymmetricSecurityKey(tokenKey)
 			};
 
 			var tokenHandler = new JwtSecurityTokenHandler();
-			var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+			try
+			{
+				var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
 
-			if (securityToken is not JwtSecurityToken jwtSecurityToken || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-				throw new SecurityTokenException("Invalid token.");
+				if (securityToken is not JwtSecurityToken jwtSecurityToken || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+					throw new SecurityTokenException("Invalid token.");
 
-			return principal;
+				return principal;
+			}
+			catch
+			{
+				return null;
+			}			
 		}
 	}
 }

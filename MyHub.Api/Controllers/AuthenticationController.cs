@@ -1,9 +1,12 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
+using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.UsersDto;
 using Newtonsoft.Json;
@@ -15,14 +18,14 @@ namespace MyHub.Controllers
 	[Route("[controller]")]
 	public class AuthenticationController : ControllerBase
 	{
-		private readonly IConfiguration _configuration;
+		private readonly AuthenticationOptions _authOptions;
 		private readonly IMapper _mapper;
 		private readonly IAuthenticationService _authenticationService;
 		private readonly ICsrfEncryptionService _encryptionService;
 
-		public AuthenticationController(IConfiguration configuration, IMapper mapper, IAuthenticationService authenticationService, ICsrfEncryptionService encryptionService)
+		public AuthenticationController(IOptions<AuthenticationOptions> authOptions, IMapper mapper, IAuthenticationService authenticationService, ICsrfEncryptionService encryptionService)
 		{
-			_configuration = configuration;
+			_authOptions = authOptions.Value;
 			_authenticationService = authenticationService;
 			_encryptionService = encryptionService;
 			_mapper	= mapper;
@@ -30,23 +33,23 @@ namespace MyHub.Controllers
 
 		private void SetCookieDetails(LoginDetails loginTokens)
 		{
-			var httpOnlyCookieOptions = new CookieOptions { Domain = _configuration?["Cookies:Domain"], HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
-			Response.Cookies.Append("X-Access-Token", loginTokens.Tokens.Token, httpOnlyCookieOptions);
-			Response.Cookies.Append("X-Refresh-Token", loginTokens.Tokens.RefreshToken, httpOnlyCookieOptions);
+			var httpOnlyCookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
+			Response.Cookies.Append(AuthConstants.AccessTokenHeader, loginTokens.Tokens.Token, httpOnlyCookieOptions);
+			Response.Cookies.Append(AuthConstants.RefreshTokenHeader, loginTokens.Tokens.RefreshToken, httpOnlyCookieOptions);
 
-			var cookieOptions = new CookieOptions { Domain = _configuration?["Cookies:Domain"], SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
-			Response.Cookies.Append("X-Logged-In", JsonConvert.SerializeObject(loginTokens.HubUserDto), cookieOptions);
-			Response.Cookies.Append("X-Forgery-Token", _encryptionService.Encrypt(_configuration?["Cookies:CsrfToken"]), cookieOptions);
+			var cookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
+			Response.Cookies.Append(AuthConstants.LoggedInHeader, JsonConvert.SerializeObject(loginTokens.HubUserDto), cookieOptions);
+			Response.Cookies.Append(AuthConstants.ForgeryTokenHeader, _encryptionService.Encrypt(_authOptions.Cookies.CsrfToken), cookieOptions);
 		}
 
 		private void RemoveCookies()
 		{
-			var cookieDomainOptions = new CookieOptions { Domain = _configuration?["Cookies:Domain"] };
+			var cookieDomainOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain };
 
-			Response.Cookies.Delete("X-Access-Token", cookieDomainOptions);
-			Response.Cookies.Delete("X-Refresh-Token", cookieDomainOptions);
-			Response.Cookies.Delete("X-Logged-In", cookieDomainOptions);
-			Response.Cookies.Delete("X-Forgery-Token", cookieDomainOptions);
+			Response.Cookies.Delete(AuthConstants.AccessTokenHeader, cookieDomainOptions);
+			Response.Cookies.Delete(AuthConstants.RefreshTokenHeader, cookieDomainOptions);
+			Response.Cookies.Delete(AuthConstants.LoggedInHeader, cookieDomainOptions);
+			Response.Cookies.Delete(AuthConstants.ForgeryTokenHeader, cookieDomainOptions);
 		}
 
 		[AllowAnonymous]
@@ -115,7 +118,7 @@ namespace MyHub.Controllers
 		[HttpPost("Refresh")]
 		public IActionResult Refresh()
 		{
-			if (!(Request.Cookies.TryGetValue("X-Access-Token", out var accessToken) && Request.Cookies.TryGetValue("X-Refresh-Token", out var refreshToken)))
+			if (!(Request.Cookies.TryGetValue(AuthConstants.AccessTokenHeader, out var accessToken) && Request.Cookies.TryGetValue(AuthConstants.RefreshTokenHeader, out var refreshToken)))
 				return BadRequest("Access Token or Refresh Token not set");
 
 			var refreshValidation = _authenticationService.RefreshUserAuthentication(accessToken, refreshToken);
@@ -124,7 +127,7 @@ namespace MyHub.Controllers
 			{
 				RemoveCookies();
 
-				return Forbid(refreshValidation.ErrorsString);
+				return Forbid(JwtBearerDefaults.AuthenticationScheme);
 			}
 
 			SetCookieDetails(refreshValidation.ResponseValue);
@@ -140,7 +143,7 @@ namespace MyHub.Controllers
 			var isUserRevoked= _authenticationService.RevokeUser(userId);
 
 			if(!isUserRevoked)
-				return Forbid("User cannot be revoked.");
+				return Forbid(JwtBearerDefaults.AuthenticationScheme);
 
 			RemoveCookies();
 

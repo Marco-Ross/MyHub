@@ -1,12 +1,11 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
 
 namespace MyHub.Api.Controllers
 {
-    [Authorize]
+	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
 	public class UsersController : ControllerBase

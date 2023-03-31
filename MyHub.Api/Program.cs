@@ -10,9 +10,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MyHub.Api.AppExtensions;
 using MyHub.Api.AutofacModules;
+using MyHub.Api.Filters;
 using MyHub.Application;
 using MyHub.Application.Services.Authentication;
-using MyHub.Domain.Emails;
+using MyHub.Domain.Authentication;
+using MyHub.Domain.ConfigurationOptions;
+using MyHub.Domain.ConfigurationOptions.Authentication;
+using MyHub.Domain.ConfigurationOptions.CorsOriginOptions;
+using MyHub.Domain.ConfigurationOptions.Domain;
 using MyHub.Domain.Exceptions;
 using MyHub.Domain.RateLimiterOptions;
 using MyHub.Infrastructure.Repository.EntityFramework;
@@ -49,8 +54,8 @@ builder.Services.AddCors(options =>
 {
 	options.AddPolicy(name: AllowedCorsOrigins, policy =>
 	{
-		policy.WithOrigins(builder.Configuration["CorsOrigin:DefaultOrigin"] ?? string.Empty)
-		.SetIsOriginAllowedToAllowWildcardSubdomains() 
+		policy.WithOrigins(builder.Configuration.GetSection(ConfigSections.CorsOrigin).Get<CorsOriginOptions>()?.DefaultOrigin ?? string.Empty)
+		.SetIsOriginAllowedToAllowWildcardSubdomains()
 		.SetPreflightMaxAge(TimeSpan.FromMinutes(10))
 		.AllowAnyMethod()
 		.AllowAnyHeader()
@@ -70,7 +75,7 @@ builder.Services.AddAuthentication(options =>
 	{
 		OnMessageReceived = context =>
 		{
-			context.Token = context.Request.Cookies["X-Access-Token"];
+			context.Token = context.Request.Cookies[AuthConstants.AccessTokenHeader];
 			return Task.CompletedTask;
 		}
 	};
@@ -82,9 +87,9 @@ builder.Services.AddAuthentication(options =>
 		ValidateAudience = true,
 		ValidateLifetime = true,
 		ValidateIssuerSigningKey = true,
-		ValidIssuer = builder.Configuration["JWT:Issuer"],
-		ValidAudience = builder.Configuration["JWT:Audience"],
-		IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"] ?? string.Empty)),
+		ValidIssuer = builder.Configuration.GetSection(ConfigSections.Authentication).Get<AuthenticationOptions>()?.JWT.Issuer ?? string.Empty,
+		ValidAudience = builder.Configuration.GetSection(ConfigSections.Authentication).Get<AuthenticationOptions>()?.JWT.Audience ?? string.Empty,
+		IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection(ConfigSections.Authentication).Get<AuthenticationOptions>()?.JWT.Key ?? string.Empty)),
 		ClockSkew = TimeSpan.Zero
 	};
 });
@@ -98,15 +103,22 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddControllers(config =>
 {
-	config.Filters.Add(typeof(CsrfFilter));
+	config.Filters.Add(typeof(CsrfFilter)); //Used on all controllers
 });
+
+builder.Services.AddScoped<ApiKeyAuthFilter>(); //Added by serviceFilter attribute
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.Configure<AuthEmailSenderOptions>(builder.Configuration.GetSection("AuthEmailSenderOptions"));
+builder.Services.Configure<AuthenticationOptions>(builder.Configuration.GetSection(ConfigSections.Authentication));
+builder.Services.Configure<DomainOptions>(builder.Configuration.GetSection(ConfigSections.Domain));
+builder.Services.Configure<CorsOriginOptions>(builder.Configuration.GetSection(ConfigSections.CorsOrigin));
+
 builder.Services.AddValidatorsFromAssemblyContaining<IApplicationAssemblyMarker>();
+
+builder.Services.ConfigureHttpClients(builder.Configuration);
 
 ////////////
 

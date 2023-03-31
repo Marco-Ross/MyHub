@@ -1,8 +1,10 @@
 using AutoMapper;
 using FluentValidation;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using MyHub.Application.Services.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
+using MyHub.Domain.ConfigurationOptions.Authentication;
+using MyHub.Domain.ConfigurationOptions.Domain;
 using MyHub.Domain.Emails;
 using MyHub.Domain.Emails.Interfaces;
 using MyHub.Domain.Users;
@@ -11,11 +13,12 @@ using MyHub.Domain.Validation.FluentValidators;
 
 namespace MyHub.Application.Tests.Services.Authentication
 {
-    public class AuthenticationServiceTests : ApplicationTestBase
+	public class AuthenticationServiceTests : ApplicationTestBase
 	{
 		private readonly IAuthenticationService _sut;
-		
-		private readonly IConfiguration _configuration = new ConfigurationBuilder().AddInMemoryCollection(GetConfigValues()).Build();
+
+		private readonly IOptions<DomainOptions> _domainOptions = Options.Create(GetDomainOptions());
+		private readonly IOptions<AuthenticationOptions> _authenticationOptions = Options.Create(GetAuthOptions());
 		private readonly Mock<IUserService> _userService = new();
 		private readonly Mock<IEncryptionService> _encryptionService = new();
 		private readonly Mock<IMapper> _mapper = new();
@@ -28,7 +31,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 		public AuthenticationServiceTests()
 		{
 			USER = new AccessingUser { Id = "TestUserId", Email = "Test@Email.com", User = new User { Username = "TestUser" }, Password = "TestPassword" };
-			_sut = new AuthenticationService(_configuration, _userService.Object, _encryptionService.Object, _mapper.Object, _emailService.Object, _registerValidator.Object);
+			_sut = new AuthenticationService(_domainOptions, _authenticationOptions,  _userService.Object, _encryptionService.Object, _mapper.Object, _emailService.Object, _registerValidator.Object);
 		}
 
 		[Fact]
@@ -312,11 +315,12 @@ namespace MyHub.Application.Tests.Services.Authentication
 		{
 			//Arrange
 
+
 			//Act
-			var validatorFunc = () => _sut.RefreshUserAuthentication("InvalidToken", "RefreshToken");
+			var validator = _sut.RefreshUserAuthentication("InvalidToken", "RefreshToken");
 
 			//Assert
-			Assert.Throws<ArgumentException>(validatorFunc);
+			Assert.True(validator.IsInvalid);
 		}
 
 		[Fact]

@@ -1,6 +1,7 @@
 ﻿using Autofac;
 using AutoMapper.Contrib.Autofac.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using MyHub.Api.Filters;
 using MyHub.Application.Services.Authentication;
 using MyHub.Application.Services.Emails;
 using MyHub.Application.Services.Emails.EmailConstructors;
@@ -42,7 +43,7 @@ namespace MyHub.Api.AutofacModules
 			builder.RegisterType<EncryptionService>().As<IEncryptionService>().InstancePerLifetimeScope();
 			builder.RegisterType<EmailService>().As<IEmailService>().InstancePerLifetimeScope();
 			builder.RegisterType<SendGridEmailService>().As<IEmailSenderService>().InstancePerLifetimeScope();
-
+			builder.RegisterType<ApiKeyAuthFilter>().InstancePerLifetimeScope();
 		}
 	}
 }
