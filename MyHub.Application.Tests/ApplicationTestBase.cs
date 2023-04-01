@@ -1,4 +1,6 @@
 ﻿using FluentValidation.Results;
+using MyHub.Domain.ConfigurationOptions.Authentication;
+using MyHub.Domain.ConfigurationOptions.Domain;
 using MyHub.Infrastructure.Repository.EntityFramework;
 using System.IdentityModel.Tokens.Jwt;
 
@@ -14,12 +16,20 @@ namespace MyHub.Application.Tests
 			JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
 		}
 
-		protected static Dictionary<string, string?> GetConfigValues()
+		protected static DomainOptions GetDomainOptions()
 		{
-			return new Dictionary<string, string?> {
-				{ "JWT:Key", "586E3272357538782F413F4428472B4B"},
-				{ "JWT:Audience", "marcos-hub"},
-				{ "JWT:Issuer", "https://localhost"}
+			return new DomainOptions { Client = "testClient", Server = "testServer" };
+		}
+		
+		protected static AuthenticationOptions GetAuthOptions()
+		{
+			return new AuthenticationOptions {
+				JWT = new Jwt
+				{
+					Key = "586E3272357538782F413F4428472B4B",
+					Audience = "marcos-hub",
+					Issuer = "https://localhost"
+				}
 			};
 		}
 
