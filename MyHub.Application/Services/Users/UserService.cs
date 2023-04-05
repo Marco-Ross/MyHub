@@ -134,7 +134,7 @@ namespace MyHub.Application.Services.Users
 
 		public void AddRefreshToken(AccessingUser authenticatingUser, string refreshToken)
 		{
-			authenticatingUser.RefreshTokens.Add(new RefreshToken { Id = Guid.NewGuid().ToString(), Token = refreshToken });
+			authenticatingUser.RefreshTokens.Add(new RefreshToken { Id = Guid.NewGuid().ToString(), Token = refreshToken, CreatedDate = DateTime.Now });
 
 			_applicationDbContext.SaveChanges();
 		}
@@ -147,6 +147,7 @@ namespace MyHub.Application.Services.Users
 				return;
 
 			refreshTokenToUpdate.Token = refreshToken;
+			refreshTokenToUpdate.CreatedDate = DateTime.Now;
 
 			_applicationDbContext.SaveChanges();
 		}

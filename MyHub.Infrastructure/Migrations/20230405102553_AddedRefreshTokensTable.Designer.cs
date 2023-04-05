@@ -12,7 +12,7 @@ using MyHub.Infrastructure.Repository.EntityFramework;
 namespace MyHub.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20230404193537_AddedRefreshTokensTable")]
+    [Migration("20230405102553_AddedRefreshTokensTable")]
     partial class AddedRefreshTokensTable
     {
         /// <inheritdoc />
@@ -28,8 +28,10 @@ namespace MyHub.Infrastructure.Migrations
             modelBuilder.Entity("MyHub.Domain.Authentication.RefreshToken", b =>
                 {
                     b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Token")
                         .IsRequired()

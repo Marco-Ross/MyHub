@@ -25,8 +25,10 @@ namespace MyHub.Infrastructure.Migrations
             modelBuilder.Entity("MyHub.Domain.Authentication.RefreshToken", b =>
                 {
                     b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Token")
                         .IsRequired()
