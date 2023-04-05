@@ -182,7 +182,7 @@ namespace MyHub.Application.Services.Authentication
 					new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
 					new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
 				}),
-				Expires = DateTime.UtcNow.AddSeconds(15),
+				Expires = DateTime.UtcNow.AddMinutes(15),
 				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey), SecurityAlgorithms.HmacSha256Signature)
 			};
 
