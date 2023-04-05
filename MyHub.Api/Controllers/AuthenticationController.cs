@@ -34,7 +34,7 @@ namespace MyHub.Controllers
 		private void SetCookieDetails(LoginDetails loginTokens)
 		{
 			var httpOnlyCookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
-			Response.Cookies.Append(AuthConstants.AccessTokenHeader, loginTokens.Tokens.Token, httpOnlyCookieOptions);
+			Response.Cookies.Append(AuthConstants.AccessTokenHeader, loginTokens.Tokens.AccessToken, httpOnlyCookieOptions);
 			Response.Cookies.Append(AuthConstants.RefreshTokenHeader, loginTokens.Tokens.RefreshToken, httpOnlyCookieOptions);
 
 			var cookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
@@ -140,7 +140,10 @@ namespace MyHub.Controllers
 		{
 			var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? string.Empty;
 
-			var isUserRevoked= _authenticationService.RevokeUser(userId);
+			if(!Request.Cookies.TryGetValue(AuthConstants.RefreshTokenHeader, out var refreshToken))
+				return BadRequest("Refresh Token not set");
+
+			var isUserRevoked= _authenticationService.RevokeUser(userId, refreshToken);
 
 			if(!isUserRevoked)
 				return Forbid(JwtBearerDefaults.AuthenticationScheme);
