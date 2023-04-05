@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using MyHub.Domain.Authentication;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MyHub.Domain.Users
@@ -10,7 +11,7 @@ namespace MyHub.Domain.Users
 		public string Email { get; set; } = string.Empty;
 		public string Password { get; set; } = string.Empty;
 		public string PasswordSalt { get; set; } = string.Empty;
-		public string RefreshToken { get; set; } = string.Empty;
+		public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 		public string RegisterToken { get; set; } = string.Empty;
 		public string RegisterTokenSalt { get; set; } = string.Empty;
 		public string ResetPasswordToken { get; set; } = string.Empty;

@@ -2,6 +2,7 @@ using AutoMapper;
 using FluentValidation;
 using Microsoft.Extensions.Options;
 using MyHub.Application.Services.Authentication;
+using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.ConfigurationOptions.Domain;
@@ -31,7 +32,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 		public AuthenticationServiceTests()
 		{
 			USER = new AccessingUser { Id = "TestUserId", Email = "Test@Email.com", User = new User { Username = "TestUser" }, Password = "TestPassword" };
-			_sut = new AuthenticationService(_domainOptions, _authenticationOptions,  _userService.Object, _encryptionService.Object, _mapper.Object, _emailService.Object, _registerValidator.Object);
+			_sut = new AuthenticationService(_domainOptions, _authenticationOptions, _userService.Object, _encryptionService.Object, _mapper.Object, _emailService.Object, _registerValidator.Object);
 		}
 
 		[Fact]
@@ -48,7 +49,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Assert
 			Assert.True(validator.IsInvalid);
 		}
-		
+
 		[Fact]
 		public async Task RegisterUser_EnsureUserExistsAndUserSaves_ReturnsValid()
 		{
@@ -66,7 +67,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			_userService.Verify(x => x.RegisterUser(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()));
 			_emailService.Verify(x => x.CreateAndSendEmail(It.IsAny<AccountRegisterEmail>()));
 		}
-		
+
 		[Theory]
 		[InlineData("")]
 		[InlineData(" ")]
@@ -81,7 +82,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Assert
 			Assert.True(validator.IsInvalid);
 		}
-		
+
 		[Theory]
 		[InlineData("")]
 		[InlineData(" ")]
@@ -111,7 +112,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Assert
 			Assert.True(validator.IsInvalid);
 		}
-		
+
 		[Fact]
 		public async Task ResetPasswordEmail_HasActiveResetPasswordTokenExpireDate_ReturnsInvalid()
 		{
@@ -125,7 +126,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Assert
 			Assert.True(validator.IsInvalid);
 		}
-		
+
 		[Fact]
 		public async Task ResetPasswordEmail_HasExpiredResetPasswordTokenDate_ReturnsValid()
 		{
@@ -189,7 +190,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Assert
 			Assert.True(validator.IsInvalid);
 		}
-		
+
 		[Theory]
 		[InlineData("")]
 		[InlineData(" ")]
@@ -204,7 +205,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Assert
 			Assert.True(validator.IsInvalid);
 		}
-		
+
 		[Theory]
 		[InlineData("")]
 		[InlineData(" ")]
@@ -219,7 +220,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Assert
 			Assert.True(validator.IsInvalid);
 		}
-		
+
 		[Theory]
 		[InlineData("")]
 		[InlineData(" ")]
@@ -234,7 +235,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Assert
 			Assert.True(validator.IsInvalid);
 		}
-		
+
 		[Fact]
 		public void AuthenticateUser_IncorrectPassword_ReturnsInvalid()
 		{
@@ -247,7 +248,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Assert
 			Assert.True(validator.IsInvalid);
 		}
-		
+
 		[Fact]
 		public void AuthenticateUser_ValidPasswordEmailNotVerified_ReturnsInvalid()
 		{
@@ -261,7 +262,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Assert
 			Assert.True(validator.IsInvalid);
 		}
-		
+
 		[Fact]
 		public void AuthenticateUser_ValidPasswordEmailVerified_ReturnsValid()
 		{
@@ -276,7 +277,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Assert
 			Assert.True(validator.IsValid);
 			Assert.NotNull(validator.ResponseValue);
-			_userService.Verify(x => x.UpdateRefreshToken(It.IsAny<AccessingUser>(), It.IsAny<string>()));
+			_userService.Verify(x => x.AddRefreshToken(It.IsAny<AccessingUser>(), It.IsAny<string>()));
 		}
 
 
@@ -294,7 +295,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Assert
 			Assert.True(validator.IsInvalid);
 		}
-		
+
 		[Theory]
 		[InlineData("")]
 		[InlineData(" ")]
@@ -314,7 +315,6 @@ namespace MyHub.Application.Tests.Services.Authentication
 		public void RefreshUserAuthentication_InvalidJWTToken_ReturnsInvalid()
 		{
 			//Arrange
-
 
 			//Act
 			var validator = _sut.RefreshUserAuthentication("InvalidToken", "RefreshToken");
@@ -340,7 +340,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 		public void RefreshUserAuthentication_InvalidRefreshToken_ReturnsInvalid()
 		{
 			//Arrange
-			USER.RefreshToken = "InvalidRefreshToken";
+			USER.RefreshTokens = new List<RefreshToken> { new RefreshToken { Token = "InvalidRefreshToken" } };
 			_userService.Setup(x => x.GetFullAccessingUserById(USER.Id)).Returns(USER);
 
 			//Act
@@ -348,22 +348,22 @@ namespace MyHub.Application.Tests.Services.Authentication
 
 			//Assert
 			Assert.True(validator.IsInvalid);
-			_userService.Verify(x => x.RevokeUser(It.IsAny<AccessingUser>()));
+			_userService.Verify(x => x.RevokeUser(It.IsAny<AccessingUser>(), It.IsAny<string>()));
 		}
 
 		[Fact]
 		public void RefreshUserAuthentication_ValidData_ReturnsValid()
 		{
 			//Arrange
-			USER.RefreshToken = "ValidRefreshToken";
+			USER.RefreshTokens = new List<RefreshToken> { new RefreshToken { Token = "ValidRefreshToken" } };
 			_userService.Setup(x => x.GetFullAccessingUserById(USER.Id)).Returns(USER);
 
 			//Act
-			var validator = _sut.RefreshUserAuthentication(ACCESSTOKEN, USER.RefreshToken);
+			var validator = _sut.RefreshUserAuthentication(ACCESSTOKEN, USER.RefreshTokens.First().Token);
 
 			//Assert
 			Assert.True(validator.IsValid);
-			_userService.Verify(x => x.UpdateRefreshToken(It.IsAny<AccessingUser>(), It.IsAny<string>()));
+			_userService.Verify(x => x.UpdateRefreshToken(It.IsAny<AccessingUser>(), It.IsAny<string>(), It.IsAny<string>()));
 		}
 	}
 }

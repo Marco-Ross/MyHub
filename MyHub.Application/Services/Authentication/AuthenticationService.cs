@@ -77,7 +77,7 @@ namespace MyHub.Application.Services.Authentication
 		{
 			var user = _userService.GetFullAccessingUserByEmail(email);
 
-			if (user is null) 
+			if (user is null)
 				return new Validator().AddError("Email address does not exist.");
 
 			if (user.ResetPasswordTokenExpireDate.HasValue && user.ResetPasswordTokenExpireDate > DateTime.Now)
@@ -116,28 +116,28 @@ namespace MyHub.Application.Services.Authentication
 
 			if (authenticatingUser is null || !_encryptionService.VerifyData(password, authenticatingUser.Password, authenticatingUser.PasswordSalt))
 				return new Validator<LoginDetails>().AddError("Invalid Login Credentials.");
-			
+
 			if (!authenticatingUser.IsEmailVerified)
 				return new Validator<LoginDetails>().AddError("Email address not verified.");
 
 			var tokens = GenerateAccessTokens(authenticatingUser);
 
-			_userService.UpdateRefreshToken(authenticatingUser, tokens.RefreshToken);
-			
+			_userService.AddRefreshToken(authenticatingUser, tokens.RefreshToken);
+
 			return new Validator<LoginDetails>().Response(SetLoginDetails(tokens, authenticatingUser));
 		}
 
 		public Validator<LoginDetails> RefreshUserAuthentication(string accessToken, string refreshToken)
 		{
-			if(string.IsNullOrWhiteSpace(accessToken))
+			if (string.IsNullOrWhiteSpace(accessToken))
 				return new Validator<LoginDetails>().AddError("Access Token is invalid.");
-			
-			if(string.IsNullOrWhiteSpace(refreshToken))
+
+			if (string.IsNullOrWhiteSpace(refreshToken))
 				return new Validator<LoginDetails>().AddError("Refresh Token is invalid.");
 
 			var principle = GetPrincipleFromToken(accessToken);
 
-			if(principle is null)
+			if (principle is null)
 				return new Validator<LoginDetails>().AddError("Token has been invalidated.");
 
 			var userId = principle.Claims.First(x => x.Type == JwtRegisteredClaimNames.Sub).Value;
@@ -147,16 +147,16 @@ namespace MyHub.Application.Services.Authentication
 			if (user is null)
 				return new Validator<LoginDetails>().AddError("Invalid user Id.");
 
-			if (user.RefreshToken != refreshToken)
+			if (!user.RefreshTokens.Any(x => x.Token == refreshToken))
 			{
-				_userService.RevokeUser(user);
+				_userService.RevokeUser(user, refreshToken);
 
 				return new Validator<LoginDetails>().AddError("Login has been invalidated.");
 			}
 
 			var newAccessTokens = GenerateAccessTokens(user);
 
-			_userService.UpdateRefreshToken(user, newAccessTokens.RefreshToken);
+			_userService.UpdateRefreshToken(user, refreshToken, newAccessTokens.RefreshToken);
 
 			return new Validator<LoginDetails>().Response(SetLoginDetails(newAccessTokens, user));
 		}
@@ -164,7 +164,7 @@ namespace MyHub.Application.Services.Authentication
 		private LoginDetails SetLoginDetails(Tokens tokens, AccessingUser user)
 			=> new() { Tokens = tokens, HubUserDto = _mapper.Map<HubUserDto>(user) };
 
-		public bool RevokeUser(string userId) => _userService.RevokeUser(userId) is not null;
+		public bool RevokeUser(string userId, string refreshToken) => _userService.RevokeUser(userId, refreshToken) is not null;
 
 		private Tokens GenerateAccessTokens(AccessingUser user)
 		{
@@ -188,7 +188,7 @@ namespace MyHub.Application.Services.Authentication
 
 			var token = tokenHandler.CreateToken(tokenDescriptor);
 
-			return new Tokens { Token = tokenHandler.WriteToken(token), RefreshToken = _encryptionService.GenerateSecureToken() };
+			return new Tokens { AccessToken = tokenHandler.WriteToken(token), RefreshToken = _encryptionService.GenerateSecureToken() };
 		}
 
 		private ClaimsPrincipal? GetPrincipleFromToken(string token)
@@ -219,7 +219,7 @@ namespace MyHub.Application.Services.Authentication
 			catch
 			{
 				return null;
-			}			
+			}
 		}
 	}
 }

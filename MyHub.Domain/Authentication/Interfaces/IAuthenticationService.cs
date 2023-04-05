@@ -8,7 +8,7 @@ namespace MyHub.Domain.Authentication.Interfaces
 		Task<Validator> RegisterUser(AccessingUser accessingUser);
 		Validator<LoginDetails> AuthenticateUser(string email, string password);
 		Validator<LoginDetails> RefreshUserAuthentication(string accessToken, string refreshToken);
-		bool RevokeUser(string userId);
+		bool RevokeUser(string userId, string refreshToken);
 		Validator VerifyUserEmail(string userId, string token);
 		Task<Validator> ResetPasswordEmail(string email);
 		Validator ResetPassword(string userId, string password, string resetPasswordToken);

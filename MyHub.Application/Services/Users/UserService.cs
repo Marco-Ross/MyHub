@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
@@ -99,14 +100,22 @@ namespace MyHub.Application.Services.Users
 			return new Validator();
 		}
 
-		public AccessingUser? RevokeUser(string userId) => RevokeUser(GetFullAccessingUserById(userId));
+		public AccessingUser? RevokeUser(string userId, string refreshToken) => RevokeUser(GetFullAccessingUserById(userId), refreshToken);
 
-		public AccessingUser? RevokeUser(AccessingUser? user)
+		public AccessingUser? RevokeUser(AccessingUser? user, string currentRefreshToken)
 		{
-			if (user == null)
+			if (user is null)
+				return null;
+			
+			if (string.IsNullOrWhiteSpace(currentRefreshToken))
 				return null;
 
-			user.RefreshToken = string.Empty;
+			var refreshToken = user.RefreshTokens.FirstOrDefault(x => x.Token == currentRefreshToken);
+
+			if (refreshToken is null)
+				user.RefreshTokens = new List<RefreshToken>();
+			else
+				user.RefreshTokens.Remove(refreshToken);
 
 			_applicationDbContext.SaveChanges();
 
@@ -118,14 +127,26 @@ namespace MyHub.Application.Services.Users
 		public AccessingUser? GetFullAccessingUserByEmail(string email)
 		{
 			if (string.IsNullOrWhiteSpace(email)) return null;
-			return _applicationDbContext.AccessingUsers.Include(x => x.User).SingleOrDefault(x => x.Email == email);
+			return _applicationDbContext.AccessingUsers.Include(x => x.User).Include(x => x.RefreshTokens).SingleOrDefault(x => x.Email == email);
 		}
 
-		public AccessingUser? GetFullAccessingUserById(string id) => _applicationDbContext.AccessingUsers.Include(x => x.User).SingleOrDefault(x => x.Id == id);
+		public AccessingUser? GetFullAccessingUserById(string id) => _applicationDbContext.AccessingUsers.Include(x => x.User).Include(x=>x.RefreshTokens).SingleOrDefault(x => x.Id == id);
 
-		public void UpdateRefreshToken(AccessingUser authenticatingUser, string refreshToken)
+		public void AddRefreshToken(AccessingUser authenticatingUser, string refreshToken)
 		{
-			authenticatingUser.RefreshToken = refreshToken;
+			authenticatingUser.RefreshTokens.Add(new RefreshToken { Id = Guid.NewGuid().ToString(), Token = refreshToken });
+
+			_applicationDbContext.SaveChanges();
+		}
+
+		public void UpdateRefreshToken(AccessingUser authenticatingUser,string oldRefreshToken, string refreshToken)
+		{
+			var refreshTokenToUpdate = authenticatingUser.RefreshTokens.FirstOrDefault(x => x.Token == oldRefreshToken);
+
+			if (refreshTokenToUpdate is null)
+				return;
+
+			refreshTokenToUpdate.Token = refreshToken;
 
 			_applicationDbContext.SaveChanges();
 		}

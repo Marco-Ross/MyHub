@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MyHub.Application.Services.Users;
+using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
@@ -110,7 +111,7 @@ namespace MyHub.Application.Tests.Services.Users
 			Assert.Equal(_applicationDbContext.AccessingUsers.Find("TestUserId")?.RegisterToken, string.Empty);
 			Assert.Null(_applicationDbContext.AccessingUsers.Find("TestUserId")?.RegisterTokenExpireDate);
 		}
-		
+
 		[Fact]
 		public void ResetUserPassword_ValidData_ReturnsValid()
 		{
@@ -204,31 +205,50 @@ namespace MyHub.Application.Tests.Services.Users
 			Assert.Equal(_applicationDbContext.AccessingUsers.Find("TestUserId")?.ResetPasswordToken, string.Empty);
 			Assert.Null(_applicationDbContext.AccessingUsers.Find("TestUserId")?.ResetPasswordTokenExpireDate);
 		}
-		
+
 		[Fact]
 		public void RevokeUser_NullUser_ReturnsInvalid()
 		{
 			//Assign
 
 			//Act
-			var revokeUser = _userService.RevokeUser(string.Empty);
+			var revokeUser = _userService.RevokeUser(string.Empty, string.Empty);
 
 			//Assert
 			Assert.Null(revokeUser);
 		}
-		
+
+		[Fact]
+		public void RevokeUser_NullRefreshTokenId_ReturnsInvalid()
+		{
+			//Assign
+			var accessingUser = new AccessingUser { User = new User { Id = "TestUserId" } };
+			AddToDatabase(accessingUser);
+
+			//Act
+			var revokeUser = _userService.RevokeUser(accessingUser.User.Id, string.Empty);
+
+			//Assert
+			Assert.Null(revokeUser);
+		}
+
 		[Fact]
 		public void RevokeUser_HasUser_ReturnsValid()
 		{
 			//Assign
-			var accessingUser = new AccessingUser { User = new User { Id = "TestUserId" }, RefreshToken = "TestRefreshToken" };
+			var accessingUser = new AccessingUser
+			{
+				User = new User { Id = "TestUserId" },
+				RefreshTokens = new List<RefreshToken> { new RefreshToken { Token = "TestRefreshToken" } }
+			};
+
 			AddToDatabase(accessingUser);
-			
+
 			//Act
-			_userService.RevokeUser(accessingUser.Id);
+			_userService.RevokeUser(accessingUser.Id, accessingUser.RefreshTokens.First().Token);
 
 			//Assert
-			Assert.Equal(string.Empty, _applicationDbContext.AccessingUsers.Find(accessingUser.Id)?.RefreshToken);
+			Assert.False(_applicationDbContext.AccessingUsers.Find(accessingUser.Id)?.RefreshTokens.Any());
 		}
 	}
 }
