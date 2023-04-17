@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
+using MyHub.Api.Controllers;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.ConfigurationOptions.Authentication;
@@ -16,7 +17,7 @@ namespace MyHub.Controllers
 	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
-	public class AuthenticationController : ControllerBase
+	public class AuthenticationController : BaseController
 	{
 		private readonly AuthenticationOptions _authOptions;
 		private readonly IMapper _mapper;
@@ -138,12 +139,10 @@ namespace MyHub.Controllers
 		[HttpPost("Revoke")]
 		public IActionResult Revoke()
 		{
-			var userId = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? string.Empty;
-
 			if(!Request.Cookies.TryGetValue(AuthConstants.RefreshTokenHeader, out var refreshToken))
 				return BadRequest("Refresh Token not set");
 
-			var isUserRevoked= _authenticationService.RevokeUser(userId, refreshToken);
+			var isUserRevoked= _authenticationService.RevokeUser(UserId, refreshToken);
 
 			if(!isUserRevoked)
 				return Forbid(JwtBearerDefaults.AuthenticationScheme);

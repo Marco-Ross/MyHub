@@ -8,7 +8,7 @@ namespace MyHub.Api.Controllers
 	[ApiController]
 	[ServiceFilter(typeof(ApiKeyAuthFilter))]
 	[Route("[controller]")]
-	public class AzureDevOpsWebHooksController : ControllerBase
+	public class AzureDevOpsWebHooksController : BaseController
 	{
 		private readonly IAzureDevOpsService _azureDevOpsService;
 
