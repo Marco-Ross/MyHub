@@ -16,5 +16,7 @@ namespace MyHub.Domain.Users.Interfaces
 		Validator VerifyUserRegistration(AccessingUser user, string token);
 		AccessingUser ResetUserPassword(AccessingUser user, string resetToken);
 		Validator VerifyUserPasswordReset(AccessingUser user, string password, string resetPasswordToken);
+		void UpdateUserTheme(string userId, string theme);
+		string GetUserTheme(string userId);
 	}
 }

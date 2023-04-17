@@ -7,7 +7,7 @@ namespace MyHub.Api.Controllers
 	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
-	public class AzureDevOpsController : ControllerBase
+	public class AzureDevOpsController : BaseController
 	{
 		private readonly IAzureDevOpsService _azureDevOpsService;
 

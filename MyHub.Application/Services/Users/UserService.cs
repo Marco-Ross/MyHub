@@ -131,6 +131,7 @@ namespace MyHub.Application.Services.Users
 		}
 
 		public AccessingUser? GetFullAccessingUserById(string id) => _applicationDbContext.AccessingUsers.Include(x => x.User).Include(x=>x.RefreshTokens).SingleOrDefault(x => x.Id == id);
+		public User? GetUserById(string id) => _applicationDbContext.Users.SingleOrDefault(x => x.Id == id);
 
 		public void AddRefreshToken(AccessingUser authenticatingUser, string refreshToken)
 		{
@@ -150,6 +151,26 @@ namespace MyHub.Application.Services.Users
 			refreshTokenToUpdate.CreatedDate = DateTime.Now;
 
 			_applicationDbContext.SaveChanges();
+		}
+
+		public void UpdateUserTheme(string userId, string theme)
+		{
+			var user = GetUserById(userId);
+
+			if(user is null) return;
+
+			user.Theme = theme;
+
+			_applicationDbContext.SaveChanges();
+		}
+
+		public string GetUserTheme(string userId)
+		{
+			var user = GetUserById(userId);
+
+			if (user is null) return string.Empty;
+
+			return user.Theme;
 		}
 	}
 }
