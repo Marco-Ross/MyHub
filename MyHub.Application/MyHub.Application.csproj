@@ -22,4 +22,8 @@
     <ProjectReference Include="..\MyHub.Infrastructure\MyHub.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Helpers\" />
+  </ItemGroup>
+
 </Project>

@@ -1,10 +1,11 @@
-﻿using MyHub.Domain.Integration.AzureDevOps;
-using MyHub.Domain.Integration.AzureDevOps.Interfaces;
+﻿using MyHub.Domain.Integration.AzureDevOps.Interfaces;
+using MyHub.Domain.Integration.AzureDevOps.WorkItems;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace MyHub.Application.Services.Integration.AzureDevOps
 {
-	public class AzureDevOpsService : IAzureDevOpsService
+    public class AzureDevOpsService : IAzureDevOpsService
 	{
 		private readonly HttpClient _httpClient;
 
@@ -28,7 +29,7 @@ namespace MyHub.Application.Services.Integration.AzureDevOps
 
 			var response = await _httpClient.SendAsync(workItemsBatchRequest);
 
-			var workItemResults = await response.Content.ReadAsAsync<WorkItemResults>();
+			var workItemResults = JsonSerializer.Deserialize<WorkItemResults>(await response.Content.ReadAsStringAsync());
 
 			if(workItemResults is null || !workItemResults.WorkItems.Any())
 				return await Task.FromResult(new WorkItemResults());

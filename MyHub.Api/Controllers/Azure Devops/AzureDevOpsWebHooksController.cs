@@ -1,25 +1,27 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MyHub.Api.Filters;
 using MyHub.Domain.Integration.AzureDevOps.Interfaces;
-using MyHub.Domain.Integration.AzureDevOps.WebHookDto;
+using MyHub.Domain.Integration.AzureDevOps.WebHooks;
 
 namespace MyHub.Api.Controllers
 {
+	//Use NgRok Ip as webhook server to localhost.
 	[ApiController]
 	[ServiceFilter(typeof(ApiKeyAuthFilter))]
 	[Route("[controller]")]
 	public class AzureDevOpsWebHooksController : ControllerBase
 	{
-		private readonly IAzureDevOpsService _azureDevOpsService;
+		private readonly IAzureDevOpsCacheService _azureDevOpsCacheService;
 
-		public AzureDevOpsWebHooksController(IAzureDevOpsService azureDevOpsService)
+		public AzureDevOpsWebHooksController(IAzureDevOpsCacheService azureDevOpsCacheService)
 		{
-			_azureDevOpsService = azureDevOpsService;
+			_azureDevOpsCacheService = azureDevOpsCacheService;
 		}
 
 		[HttpPost]
-		public IActionResult WorkItemUpdate(UpdatedWorkItemEventDto updatedWorkItemEvent)
+		public async Task<IActionResult> WorkItemUpdate(UpdatedWorkItemEventDto updatedWorkItemEvent)
 		{
+			await _azureDevOpsCacheService.UpdateCache(updatedWorkItemEvent.UpdatedWorkItemDto.WorkItemId, updatedWorkItemEvent.UpdatedWorkItemDto.UpdatedWorkItemFields);
 			return Ok();
 		}
 	}

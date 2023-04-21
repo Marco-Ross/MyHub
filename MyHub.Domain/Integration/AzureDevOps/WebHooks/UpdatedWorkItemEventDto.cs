@@ -1,10 +1,10 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
-namespace MyHub.Domain.Integration.AzureDevOps.WebHookDto
+namespace MyHub.Domain.Integration.AzureDevOps.WebHooks
 {
 	public class UpdatedWorkItemEventDto : WorkItemEventDto
 	{
-		[JsonProperty("resource")]
+		[JsonPropertyName("resource")]
 		public UpdatedWorkItemDto UpdatedWorkItemDto { get; set; } = new UpdatedWorkItemDto();
 	}
 }

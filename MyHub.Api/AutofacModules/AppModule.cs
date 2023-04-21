@@ -5,10 +5,12 @@ using MyHub.Api.Filters;
 using MyHub.Application.Services.Authentication;
 using MyHub.Application.Services.Emails;
 using MyHub.Application.Services.Emails.EmailConstructors;
+using MyHub.Application.Services.Integration.AzureDevOps;
 using MyHub.Application.Services.Users;
 using MyHub.Domain;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Emails.Interfaces;
+using MyHub.Domain.Integration.AzureDevOps.Interfaces;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Infrastructure.Repository.EntityFramework;
 
@@ -44,6 +46,10 @@ namespace MyHub.Api.AutofacModules
 			builder.RegisterType<EmailService>().As<IEmailService>().InstancePerLifetimeScope();
 			builder.RegisterType<SendGridEmailService>().As<IEmailSenderService>().InstancePerLifetimeScope();
 			builder.RegisterType<ApiKeyAuthFilter>().InstancePerLifetimeScope();
+			builder.RegisterType<AzureDevOpsCacheService>().As<IAzureDevOpsCacheService>().InstancePerLifetimeScope();
+
+			//CacheDecorators
+			builder.RegisterDecorator<AzureDevOpsCacheService, IAzureDevOpsService>();
 		}
 	}
 }

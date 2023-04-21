@@ -120,6 +120,8 @@ builder.Services.AddValidatorsFromAssemblyContaining<IApplicationAssemblyMarker>
 
 builder.Services.ConfigureHttpClients(builder.Configuration);
 
+builder.Services.AddMemoryCache();
+
 ////////////
 
 var app = builder.Build();
