@@ -21,7 +21,8 @@ namespace MyHub.Application.Services.Authentication
 			if (string.IsNullOrWhiteSpace(input))
 				return string.Empty;
 
-			try {
+			try
+			{
 				var protector = _dataProtectionProvider.CreateProtector(Protector);
 				return protector.Protect(input);
 			}
@@ -42,11 +43,11 @@ namespace MyHub.Application.Services.Authentication
 				var protector = _dataProtectionProvider.CreateProtector(Protector);
 				return protector.Unprotect(encryptionText);
 			}
-			catch(CryptographicException e)
+			catch (CryptographicException e)
 			{
 				_logger.LogError("CSRF decryption failed.", e);
 				return string.Empty;
 			}
-		}	
+		}
 	}
 }

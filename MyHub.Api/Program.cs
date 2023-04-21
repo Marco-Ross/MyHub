@@ -1,3 +1,6 @@
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
@@ -5,12 +8,18 @@ using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationM
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using MyHub.Api.AppExtensions;
+using MyHub.Api.AutofacModules;
+using MyHub.Api.Filters;
+using MyHub.Application;
 using MyHub.Application.Services.Authentication;
-using MyHub.Application.Services.Users;
-using MyHub.Domain;
-using MyHub.Domain.Authentication.Interfaces;
+using MyHub.Domain.Authentication;
+using MyHub.Domain.ConfigurationOptions;
+using MyHub.Domain.ConfigurationOptions.Authentication;
+using MyHub.Domain.ConfigurationOptions.CorsOriginOptions;
+using MyHub.Domain.ConfigurationOptions.Domain;
+using MyHub.Domain.Exceptions;
 using MyHub.Domain.RateLimiterOptions;
-using MyHub.Domain.Users.Interfaces;
 using MyHub.Infrastructure.Repository.EntityFramework;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
@@ -20,10 +29,9 @@ const string AllowedCorsOrigins = "_corsOrigins";
 const string SlidingPolicy = "sliding";
 
 var builder = WebApplication.CreateBuilder(args);
-
-//Clear and add logger DI
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
+builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
+var configSettings = builder.Configuration;
+builder.Host.ConfigureContainer<ContainerBuilder>(builder => builder.RegisterModule(new AppModule(configSettings)));
 
 //Rate Limiter
 var rateOptions = new MyRateLimiterOptions();
@@ -46,7 +54,9 @@ builder.Services.AddCors(options =>
 {
 	options.AddPolicy(name: AllowedCorsOrigins, policy =>
 	{
-		policy.WithOrigins("https://marcoshub.com", "https://localhost:4200", "https://localhost:5100")//maybe no local host in prod?
+		policy.WithOrigins(builder.Configuration.GetSection(ConfigSections.CorsOrigin).Get<CorsOriginOptions>()?.DefaultOrigin ?? string.Empty)
+		.SetIsOriginAllowedToAllowWildcardSubdomains()
+		.SetPreflightMaxAge(TimeSpan.FromMinutes(10))
 		.AllowAnyMethod()
 		.AllowAnyHeader()
 		.AllowCredentials();
@@ -65,7 +75,7 @@ builder.Services.AddAuthentication(options =>
 	{
 		OnMessageReceived = context =>
 		{
-			context.Token = context.Request.Cookies["X-Access-Token"];
+			context.Token = context.Request.Cookies[AuthConstants.AccessTokenHeader];
 			return Task.CompletedTask;
 		}
 	};
@@ -77,9 +87,9 @@ builder.Services.AddAuthentication(options =>
 		ValidateAudience = true,
 		ValidateLifetime = true,
 		ValidateIssuerSigningKey = true,
-		ValidIssuer = builder.Configuration["JWT:Issuer"],
-		ValidAudience = builder.Configuration["JWT:Audience"],
-		IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"] ?? string.Empty)),
+		ValidIssuer = builder.Configuration.GetSection(ConfigSections.Authentication).Get<AuthenticationOptions>()?.JWT.Issuer ?? string.Empty,
+		ValidAudience = builder.Configuration.GetSection(ConfigSections.Authentication).Get<AuthenticationOptions>()?.JWT.Audience ?? string.Empty,
+		IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection(ConfigSections.Authentication).Get<AuthenticationOptions>()?.JWT.Key ?? string.Empty)),
 		ClockSkew = TimeSpan.Zero
 	};
 });
@@ -90,27 +100,29 @@ JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
 
 //builder.Services.AddResponseCaching; //has to be after AddCors
 builder.Services.AddAuthorization();
-builder.Services.AddAutoMapper(typeof(IDomainAssemblyMarker));
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-//Move to new file and reference
-builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<ICsrfEncryptionService, CsrfEncryptionService>();
-builder.Services.AddScoped<IPasswordEncryptionService, PasswordEncryptionService>();
 
 builder.Services.AddControllers(config =>
 {
-	config.Filters.Add(typeof(CsrfFilter));
+	config.Filters.Add(typeof(CsrfFilter)); //Used on all controllers
 });
+
+builder.Services.AddScoped<ApiKeyAuthFilter>(); //Added by serviceFilter attribute
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.Configure<AuthenticationOptions>(builder.Configuration.GetSection(ConfigSections.Authentication));
+builder.Services.Configure<DomainOptions>(builder.Configuration.GetSection(ConfigSections.Domain));
+builder.Services.Configure<CorsOriginOptions>(builder.Configuration.GetSection(ConfigSections.CorsOrigin));
+
+builder.Services.AddValidatorsFromAssemblyContaining<IApplicationAssemblyMarker>();
+
+builder.Services.ConfigureHttpClients(builder.Configuration);
+
+builder.Services.AddMemoryCache();
 
 ////////////
-
 
 var app = builder.Build();
 
@@ -119,6 +131,16 @@ if (app.Environment.IsDevelopment())
 {
 	app.UseSwagger();
 	app.UseSwaggerUI();
+}
+
+using (var scope = app.Services.CreateScope())
+{
+	var services = scope.ServiceProvider;
+
+	var context = services.GetRequiredService<ApplicationDbContext>();
+	context.Database.Migrate();
+
+	app.ConfigureExceptionHandler(services.GetRequiredService<ILogger<ExceptionDetails>>());
 }
 
 app.UseRateLimiter();

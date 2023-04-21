@@ -1,15 +1,15 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
+using MyHub.Domain.Users.UsersDto;
 
 namespace MyHub.Api.Controllers
 {
-    [Authorize]
+	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
-	public class UsersController : ControllerBase
+	public class UsersController : BaseController
 	{
 		private readonly IMapper _mapper;
 		private readonly IUserService _userService;
@@ -40,6 +40,20 @@ namespace MyHub.Api.Controllers
 		[HttpDelete("{id}")]
 		public void Delete(int id)
 		{
+		}
+
+		[HttpPut("Theme")]
+		public IActionResult UpdateUserTheme(ThemeOptionsDto themeOptionsDto)
+		{
+			_userService.UpdateUserTheme(UserId, themeOptionsDto.Theme);
+
+			return Ok();
+		}
+
+		[HttpGet("Theme")]
+		public IActionResult GetUserTheme()
+		{
+			return Ok(new { Theme = _userService.GetUserTheme(UserId) });
 		}
 	}
 }
