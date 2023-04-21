@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
-using MyHub.Api.Controllers;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.ConfigurationOptions.Authentication;
