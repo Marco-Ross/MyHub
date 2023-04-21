@@ -54,7 +54,7 @@ builder.Services.AddCors(options =>
 {
 	options.AddPolicy(name: AllowedCorsOrigins, policy =>
 	{
-		policy.WithOrigins(builder.Configuration.GetSection(ConfigSections.CorsOrigin).Get<CorsOriginOptions>()?.DefaultOrigin ?? string.Empty)
+		policy.WithOrigins(builder.Configuration.GetSection(ConfigSections.CorsOrigin).Get<CorsOriginOptions>()?.DefaultOrigin.Split(',').Select(x => x).ToArray() ?? Array.Empty<string>())
 		.SetIsOriginAllowedToAllowWildcardSubdomains()
 		.SetPreflightMaxAge(TimeSpan.FromMinutes(10))
 		.AllowAnyMethod()
