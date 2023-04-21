@@ -10,7 +10,7 @@ namespace MyHub.Application.Services.Authentication
 		private readonly int KeySize = 128;
 		private readonly int DegreeOfParallelism = 2;
 		private readonly int Iterations = 2;
-		private readonly int MemorySize = 10000; //10MB
+		private readonly int MemorySize = 60000; //60MB
 
 		public string HashData(string data, out byte[] salt) 
 		{
