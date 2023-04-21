@@ -5,12 +5,13 @@ using System.Text;
 
 namespace MyHub.Application.Services.Authentication
 {
+	//Min Settings: https://tobtu.com/minimum-password-settings/
 	public class EncryptionService : IEncryptionService
 	{
 		private readonly int KeySize = 128;
-		private readonly int DegreeOfParallelism = 2;
+		private readonly int DegreeOfParallelism = 1;
 		private readonly int Iterations = 2;
-		private readonly int MemorySize = 60000; //60MB
+		private readonly int MemorySize = 20000; //20MB
 
 		public string HashData(string data, out byte[] salt) 
 		{
