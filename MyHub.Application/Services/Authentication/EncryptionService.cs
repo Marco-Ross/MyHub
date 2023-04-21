@@ -8,7 +8,7 @@ namespace MyHub.Application.Services.Authentication
 	public class EncryptionService : IEncryptionService
 	{
 		private readonly int KeySize = 128;
-		private readonly int DegreeOfParallelism = 2; //1 cores
+		private readonly int DegreeOfParallelism = 1; //0.5 cores
 		private readonly int Iterations = 2;
 		private readonly int MemorySize = 100000; //100MB
 
