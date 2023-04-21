@@ -10,7 +10,7 @@ using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.UsersDto;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace MyHub.Controllers
 {
@@ -39,7 +39,7 @@ namespace MyHub.Controllers
 			Response.Cookies.Append(AuthConstants.RefreshTokenHeader, loginTokens.Tokens.RefreshToken, httpOnlyCookieOptions);
 
 			var cookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
-			Response.Cookies.Append(AuthConstants.LoggedInHeader, JsonConvert.SerializeObject(loginTokens.HubUserDto), cookieOptions);
+			Response.Cookies.Append(AuthConstants.LoggedInHeader, JsonSerializer.Serialize(loginTokens.HubUserDto), cookieOptions);
 			Response.Cookies.Append(AuthConstants.ForgeryTokenHeader, _encryptionService.Encrypt(_authOptions.Cookies.CsrfToken), cookieOptions);
 		}
 

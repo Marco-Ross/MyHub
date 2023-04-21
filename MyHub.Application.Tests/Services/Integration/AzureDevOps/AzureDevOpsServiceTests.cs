@@ -1,9 +1,9 @@
 ﻿using MyHub.Application.Services.Integration.AzureDevOps;
-using Newtonsoft.Json;
 using System.Text;
 using Moq.Protected;
 using System.Net;
 using MyHub.Domain.Integration.AzureDevOps.Interfaces;
+using System.Text.Json;
 
 namespace MyHub.Application.Tests.Services.Integration.AzureDevOps
 {
@@ -45,7 +45,7 @@ namespace MyHub.Application.Tests.Services.Integration.AzureDevOps
 				.Returns(() => Task.FromResult(new HttpResponseMessage
 				{
 					StatusCode = HttpStatusCode.OK,
-					Content = new StringContent(JsonConvert.SerializeObject(new { }), Encoding.UTF8, "application/json")
+					Content = new StringContent(JsonSerializer.Serialize(new { }), Encoding.UTF8, "application/json")
 				}));
 
 			//Act
@@ -63,7 +63,7 @@ namespace MyHub.Application.Tests.Services.Integration.AzureDevOps
 				.Returns(() => Task.FromResult(new HttpResponseMessage
 				{
 					StatusCode = HttpStatusCode.OK,
-					Content = new StringContent(JsonConvert.SerializeObject(new { queryType = "testQueryType" }), Encoding.UTF8, "application/json")
+					Content = new StringContent(JsonSerializer.Serialize(new { queryType = "testQueryType" }), Encoding.UTF8, "application/json")
 				}))
 				.Returns(() => Task.FromResult(new HttpResponseMessage
 				{
@@ -85,12 +85,12 @@ namespace MyHub.Application.Tests.Services.Integration.AzureDevOps
 				.Returns(() => Task.FromResult(new HttpResponseMessage
 				{
 					StatusCode = HttpStatusCode.OK,
-					Content = new StringContent(JsonConvert.SerializeObject(new { queryType = "testQueryType" }), Encoding.UTF8, "application/json")
+					Content = new StringContent(JsonSerializer.Serialize(new { queryType = "testQueryType" }), Encoding.UTF8, "application/json")
 				}))
 				.Returns(() => Task.FromResult(new HttpResponseMessage
 				{
 					StatusCode = HttpStatusCode.OK,
-					Content = new StringContent(JsonConvert.SerializeObject(new { }), Encoding.UTF8, "application/json")
+					Content = new StringContent(JsonSerializer.Serialize(new { }), Encoding.UTF8, "application/json")
 				}));
 
 			//Act
@@ -108,12 +108,12 @@ namespace MyHub.Application.Tests.Services.Integration.AzureDevOps
 				.Returns(() => Task.FromResult(new HttpResponseMessage
 				{
 					StatusCode = HttpStatusCode.OK,
-					Content = new StringContent(JsonConvert.SerializeObject(new { queryType = "testQueryType", workItems = new[] { new { id = "TestId" } } }), Encoding.UTF8, "application/json")
+					Content = new StringContent(JsonSerializer.Serialize(new { queryType = "testQueryType", workItems = new[] { new { id = 1 } } }), Encoding.UTF8, "application/json")
 				}))
 				.Returns(() => Task.FromResult(new HttpResponseMessage
 				{
 					StatusCode = HttpStatusCode.OK,
-					Content = new StringContent(JsonConvert.SerializeObject(new { count = 1, value = new[] { new { id = "TestId" } } }), Encoding.UTF8, "application/json")
+					Content = new StringContent(JsonSerializer.Serialize(new { count = 1, value = new[] { new { id = 1 } } }), Encoding.UTF8, "application/json")
 				}));
 
 			//Act

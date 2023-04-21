@@ -1,22 +1,22 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
-namespace MyHub.Domain.Integration.AzureDevOps.WebHookDto
+namespace MyHub.Domain.Integration.AzureDevOps.WebHooks
 {
 	public class WorkItemEventDto
 	{
-		[JsonProperty("id")]
+		[JsonPropertyName("id")]
 		public string Id { get; set; } = string.Empty;
 
-		[JsonProperty("subscriptionId")]
+		[JsonPropertyName("subscriptionId")]
 		public string SubscriptionId { get; set; } = string.Empty;
-		
-		[JsonProperty("notificationId")]
+
+		[JsonPropertyName("notificationId")]
 		public int NotificationId { get; set; }
 
-		[JsonProperty("eventType")]
+		[JsonPropertyName("eventType")]
 		public string EventType { get; set; } = string.Empty;
 
-		[JsonProperty("publisherId")]
+		[JsonPropertyName("publisherId")]
 		public string PublisherId { get; set; } = string.Empty;
 	}
 }
