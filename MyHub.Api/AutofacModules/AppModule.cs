@@ -3,12 +3,14 @@ using AutoMapper.Contrib.Autofac.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using MyHub.Api.Filters;
 using MyHub.Application.Services.Authentication;
+using MyHub.Application.Services.BackgroundServices;
 using MyHub.Application.Services.Emails;
 using MyHub.Application.Services.Emails.EmailConstructors;
 using MyHub.Application.Services.Integration.AzureDevOps;
 using MyHub.Application.Services.Users;
 using MyHub.Domain;
 using MyHub.Domain.Authentication.Interfaces;
+using MyHub.Domain.Background.CleanBackground.Interfaces;
 using MyHub.Domain.Emails.Interfaces;
 using MyHub.Domain.Integration.AzureDevOps.Interfaces;
 using MyHub.Domain.Users.Interfaces;
@@ -47,6 +49,7 @@ namespace MyHub.Api.AutofacModules
 			builder.RegisterType<SendGridEmailService>().As<IEmailSenderService>().InstancePerLifetimeScope();
 			builder.RegisterType<ApiKeyAuthFilter>().InstancePerLifetimeScope();
 			builder.RegisterType<AzureDevOpsCacheService>().As<IAzureDevOpsCacheService>().InstancePerLifetimeScope();
+			builder.RegisterType<CleanTokensBackgroundService>().As<ICleanTokensBackgroundService>().InstancePerLifetimeScope();
 
 			//CacheDecorators
 			builder.RegisterDecorator<AzureDevOpsCacheService, IAzureDevOpsService>();

@@ -12,6 +12,7 @@ using MyHub.Api.AppExtensions;
 using MyHub.Api.AutofacModules;
 using MyHub.Api.Filters;
 using MyHub.Application;
+using MyHub.Application.BackgroundTasks;
 using MyHub.Application.Services.Authentication;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.ConfigurationOptions;
@@ -119,6 +120,7 @@ builder.Services.Configure<CorsOriginOptions>(builder.Configuration.GetSection(C
 builder.Services.AddValidatorsFromAssemblyContaining<IApplicationAssemblyMarker>();
 
 builder.Services.ConfigureHttpClients(builder.Configuration);
+builder.Services.AddHostedService<CleanupBackgroundTaskService>();
 
 builder.Services.AddMemoryCache();
 
