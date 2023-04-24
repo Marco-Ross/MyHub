@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Helpers\**" />
+    <EmbeddedResource Remove="Helpers\**" />
+    <None Remove="Helpers\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Autofac" Version="7.0.0" />
     <PackageReference Include="FluentValidation" Version="11.5.1" />
     <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.0" />
@@ -20,10 +26,6 @@
   <ItemGroup>
     <ProjectReference Include="..\MyHub.Domain\MyHub.Domain.csproj" />
     <ProjectReference Include="..\MyHub.Infrastructure\MyHub.Infrastructure.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Helpers\" />
   </ItemGroup>
 
 </Project>
