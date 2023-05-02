@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.JsonWebTokens;
 using MyHub.Api.Controllers;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
@@ -29,7 +28,7 @@ namespace MyHub.Controllers
 			_authOptions = authOptions.Value;
 			_authenticationService = authenticationService;
 			_encryptionService = encryptionService;
-			_mapper	= mapper;
+			_mapper = mapper;
 		}
 
 		private void SetCookieDetails(LoginDetails loginTokens)
@@ -64,7 +63,7 @@ namespace MyHub.Controllers
 
 			return Ok();
 		}
-		
+
 		[AllowAnonymous]
 		[HttpPost("Register/Complete")]
 		public IActionResult CompleteRegisterEmail(RegisterUserCompleteDto registerUserCompleteDto)
@@ -76,7 +75,7 @@ namespace MyHub.Controllers
 
 			return Ok();
 		}
-		
+
 		[AllowAnonymous]
 		[HttpPost("ResetPassword")]
 		public async Task<IActionResult> ResetPassword(ResetPasswordDto resetPasswordDto)
@@ -88,7 +87,7 @@ namespace MyHub.Controllers
 
 			return Ok();
 		}
-		
+
 		[AllowAnonymous]
 		[HttpPost("ResetPassword/Complete")]
 		public IActionResult CompleteResetPassword(ResetPasswordCompleteDto resetPasswordCompleteDto)
@@ -139,12 +138,12 @@ namespace MyHub.Controllers
 		[HttpPost("Revoke")]
 		public IActionResult Revoke()
 		{
-			if(!Request.Cookies.TryGetValue(AuthConstants.RefreshTokenHeader, out var refreshToken))
+			if (!Request.Cookies.TryGetValue(AuthConstants.RefreshTokenHeader, out var refreshToken))
 				return BadRequest("Refresh Token not set");
 
-			var isUserRevoked= _authenticationService.RevokeUser(UserId, refreshToken);
+			var isUserRevoked = _authenticationService.RevokeUser(UserId, refreshToken);
 
-			if(!isUserRevoked)
+			if (!isUserRevoked)
 				return Forbid(JwtBearerDefaults.AuthenticationScheme);
 
 			RemoveCookies();
