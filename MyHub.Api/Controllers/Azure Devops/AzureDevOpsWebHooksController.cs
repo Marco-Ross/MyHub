@@ -24,7 +24,7 @@ namespace MyHub.Api.Controllers
 		[HttpPost]
 		public async Task<IActionResult> WorkItemUpdate(UpdatedWorkItemEventDto updatedWorkItemEvent)
 		{
-			await _azureDevOpsCacheService.UpdateCache(updatedWorkItemEvent.UpdatedWorkItemDto.WorkItemId, updatedWorkItemEvent.UpdatedWorkItemDto.UpdatedWorkItemFields);
+			_azureDevOpsCacheService.UpdateCachedWorkItems(updatedWorkItemEvent.UpdatedWorkItemDto.WorkItemId, updatedWorkItemEvent.UpdatedWorkItemDto.UpdatedWorkItemFields);
 
 			await _hubResolver.Send(updatedWorkItemEvent);
 			return Ok();

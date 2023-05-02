@@ -5,6 +5,6 @@ namespace MyHub.Domain.Integration.AzureDevOps.Interfaces
 {
 	public interface IAzureDevOpsCacheService : IAzureDevOpsService
 	{
-		Task<WorkItemResults> UpdateCache(int workItemId, JsonObject updatedWorkItemFields);
+		WorkItemResults? UpdateCachedWorkItems(int workItemId, JsonObject updatedWorkItemFields);
 	}
 }
