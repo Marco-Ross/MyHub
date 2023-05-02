@@ -27,7 +27,7 @@ namespace MyHub.Application.BackgroundTasks
 				{
 					_cleanTokensBackgroundService.CleanBackgroundTokens();
 				
-					await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
+					await Task.Delay(TimeSpan.FromDays(6), stoppingToken);
 				}
 				catch (TaskCanceledException exception)
 				{
