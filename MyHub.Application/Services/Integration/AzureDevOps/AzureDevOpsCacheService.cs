@@ -18,7 +18,7 @@ namespace MyHub.Application.Services.Integration.AzureDevOps
 		{
 			_memoryCache = memoryCache;
 			_azureDevOpsService = azureDevOpsService;
-			_cacheOptions = new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(10) };
+			_cacheOptions = new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(12) };
 		}
 
 		private T? GetCache<T>(string key)
