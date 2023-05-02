@@ -18,32 +18,47 @@ namespace MyHub.Application.Services.Integration.AzureDevOps
 		{
 			_memoryCache = memoryCache;
 			_azureDevOpsService = azureDevOpsService;
-			_cacheOptions = new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(12) };
+			_cacheOptions = new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(10) };
+		}
+
+		private T? GetCache<T>(string key)
+		{
+			if (_memoryCache.TryGetValue<T>(key, out var cacheValue) && cacheValue is not null)
+				return cacheValue;
+
+			return cacheValue;
+		}
+
+		private T SetCache<T>(string key, T value)
+		{
+			return _memoryCache.Set(key, value, _cacheOptions);
 		}
 
 		public async Task<WorkItemResults> GetWorkItems()
 		{
-			if (_memoryCache.TryGetValue<WorkItemResults>(CacheKeys.WorkItemResults, out var cacheValue) && cacheValue is not null && cacheValue.Count != 0)
-				return cacheValue ?? new WorkItemResults();
+			var cacheValue = GetCache<WorkItemResults>(CacheKeys.WorkItemResults);
+
+			if (cacheValue is not null)
+				return cacheValue;
 
 			var workItemResults = await _azureDevOpsService.GetWorkItems();
 
 			return SetCache(CacheKeys.WorkItemResults, workItemResults);
 		}
 
-		public async Task<WorkItemResults> UpdateCache(int workItemId, JsonObject updatedWorkItemFields)
+		public WorkItemResults? UpdateCachedWorkItems(int workItemId, JsonObject updatedWorkItemFields)
 		{
-			var workItemResults = await GetWorkItems();
+			var workItemResults = GetCache<WorkItemResults>(CacheKeys.WorkItemResults);
 
 			if (workItemResults is null || workItemResults.Count == 0 || !workItemResults.WorkItems.Any())
-				return new WorkItemResults();
+				return null;
 
 			var updatedJsonDict = updatedWorkItemFields.ToDictionary(x => x.Key, y => y.Value);
 
 			var existingWorkItemFields = workItemResults.WorkItems.Find(x => x.Id == workItemId)?.Fields;
 
 			if (existingWorkItemFields is null || updatedJsonDict is null)
-				return new WorkItemResults();
+				return null;
 
 			foreach (var field in updatedJsonDict)
 			{
@@ -53,11 +68,6 @@ namespace MyHub.Application.Services.Integration.AzureDevOps
 			}
 
 			return SetCache(CacheKeys.WorkItemResults, workItemResults);
-		}
-
-		private T SetCache<T>(string key, T value)
-		{
-			return _memoryCache.Set(key, value, _cacheOptions);
 		}
 	}
 }
