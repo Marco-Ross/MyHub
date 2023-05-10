@@ -1,6 +1,7 @@
 ﻿using FluentValidation.Results;
 using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.ConfigurationOptions.Domain;
+using MyHub.Domain.ConfigurationOptions.Storage;
 using MyHub.Infrastructure.Repository.EntityFramework;
 using System.IdentityModel.Tokens.Jwt;
 
@@ -19,6 +20,11 @@ namespace MyHub.Application.Tests
 		protected static DomainOptions GetDomainOptions()
 		{
 			return new DomainOptions { Client = "testClient", Server = "testServer" };
+		}
+
+		protected static StorageOptions GetStorageOptions()
+		{
+			return new StorageOptions { AccountName = "marcoshubstorage", ImageContainer= "marcohubcontainer", AccountKey = "LxtPUiDdp49gCRyBWk7dNAuZ7X7r8cwxQi6C7o6xNG4gY/BW6113u29Rx87INQYZVYH4bVaRj2nP+AStY/UNxQ==" };
 		}
 		
 		protected static AuthenticationOptions GetAuthOptions()

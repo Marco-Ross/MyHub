@@ -55,5 +55,16 @@ namespace MyHub.Api.Controllers
 		{
 			return Ok(new { Theme = _userService.GetUserTheme(UserId) });
 		}
+		
+		[HttpGet("ProfileImage")]
+		public async Task<IActionResult> GetProfileImage()
+		{
+			var image = await _userService.GetUserProfileImage(UserId);
+
+			if(image is null)
+				return NotFound();
+
+			return File(image, "image/png");
+		}
 	}
 }

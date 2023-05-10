@@ -18,7 +18,6 @@ using MyHub.Domain.Authentication;
 using MyHub.Domain.ConfigurationOptions;
 using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.ConfigurationOptions.CorsOriginOptions;
-using MyHub.Domain.ConfigurationOptions.Domain;
 using MyHub.Domain.Exceptions;
 using MyHub.Domain.RateLimiterOptions;
 using MyHub.Infrastructure.Repository.EntityFramework;
@@ -113,12 +112,9 @@ builder.Services.AddScoped<ApiKeyAuthFilter>(); //Added by serviceFilter attribu
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.Configure<AuthenticationOptions>(builder.Configuration.GetSection(ConfigSections.Authentication));
-builder.Services.Configure<DomainOptions>(builder.Configuration.GetSection(ConfigSections.Domain));
-builder.Services.Configure<CorsOriginOptions>(builder.Configuration.GetSection(ConfigSections.CorsOrigin));
-
 builder.Services.AddValidatorsFromAssemblyContaining<IApplicationAssemblyMarker>();
 
+builder.Services.SetAppOptions(builder.Configuration);
 builder.Services.ConfigureHttpClients(builder.Configuration);
 builder.Services.AddBackgroundServices();
 

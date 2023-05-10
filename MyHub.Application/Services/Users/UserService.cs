@@ -1,6 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MyHub.Application.Helpers;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
+using MyHub.Domain.Enums.Enumerations;
+using MyHub.Domain.Integration.AzureDevOps.Interfaces;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Domain.Validation;
@@ -12,30 +15,28 @@ namespace MyHub.Application.Services.Users
 	{
 		private readonly ApplicationDbContext _applicationDbContext;
 		private readonly IEncryptionService _encryptionService;
+		private readonly IAzureStorageService _azureStorageService;
 
-		public UserService(ApplicationDbContext applicationDbContext, IEncryptionService encryptionService)
+		public UserService(ApplicationDbContext applicationDbContext, IEncryptionService encryptionService, IAzureStorageService azureStorageService)
 		{
 			_applicationDbContext = applicationDbContext;
 			_encryptionService = encryptionService;
+			_azureStorageService = azureStorageService;
 		}
 
-		public AccessingUser RegisterUser(string email, string username, string password, string registerToken)
+		public AccessingUser RegisterUserDetails(AccessingUser newUser, string registerToken)
 		{
-			var hashedPassword = _encryptionService.HashData(password, out var passwordSalt);
+			var hashedPassword = _encryptionService.HashData(newUser.Password, out var passwordSalt);
 			var hashedRegisterToken = _encryptionService.HashData(registerToken, out var tokenSalt);
 
-			var user = new AccessingUser
-			{
-				User = new User { Id = Guid.NewGuid().ToString(), Username = username },
-				Email = email,
-				Password = hashedPassword,
-				PasswordSalt = Convert.ToHexString(passwordSalt),
-				RegisterToken = hashedRegisterToken,
-				RegisterTokenSalt = Convert.ToHexString(tokenSalt),
-				RegisterTokenExpireDate = DateTime.Now.AddHours(3)
-			};
-
-			var savedUser = _applicationDbContext.AccessingUsers.Add(user);
+			newUser.User.Id =  Guid.NewGuid().ToString();
+			newUser.Password = hashedPassword;
+			newUser.PasswordSalt = Convert.ToHexString(passwordSalt);
+			newUser.RegisterToken = hashedRegisterToken;
+			newUser.RegisterTokenSalt = Convert.ToHexString(tokenSalt);
+			newUser.RegisterTokenExpireDate = DateTime.Now.AddHours(3);
+	
+			var savedUser = _applicationDbContext.AccessingUsers.Add(newUser);
 
 			_applicationDbContext.SaveChanges();
 
@@ -106,7 +107,7 @@ namespace MyHub.Application.Services.Users
 		{
 			if (user is null)
 				return null;
-			
+
 			if (string.IsNullOrWhiteSpace(currentRefreshToken))
 				return null;
 
@@ -130,7 +131,7 @@ namespace MyHub.Application.Services.Users
 			return _applicationDbContext.AccessingUsers.Include(x => x.User).Include(x => x.RefreshTokens).SingleOrDefault(x => x.Email == email);
 		}
 
-		public AccessingUser? GetFullAccessingUserById(string id) => _applicationDbContext.AccessingUsers.Include(x => x.User).Include(x=>x.RefreshTokens).SingleOrDefault(x => x.Id == id);
+		public AccessingUser? GetFullAccessingUserById(string id) => _applicationDbContext.AccessingUsers.Include(x => x.User).Include(x => x.RefreshTokens).SingleOrDefault(x => x.Id == id);
 		public User? GetUserById(string id) => _applicationDbContext.Users.SingleOrDefault(x => x.Id == id);
 
 		public void AddRefreshToken(AccessingUser authenticatingUser, string refreshToken)
@@ -140,7 +141,7 @@ namespace MyHub.Application.Services.Users
 			_applicationDbContext.SaveChanges();
 		}
 
-		public void UpdateRefreshToken(AccessingUser authenticatingUser,string oldRefreshToken, string refreshToken)
+		public void UpdateRefreshToken(AccessingUser authenticatingUser, string oldRefreshToken, string refreshToken)
 		{
 			var refreshTokenToUpdate = authenticatingUser.RefreshTokens.FirstOrDefault(x => x.Token == oldRefreshToken);
 
@@ -157,7 +158,7 @@ namespace MyHub.Application.Services.Users
 		{
 			var user = GetUserById(userId);
 
-			if(user is null) return;
+			if (user is null) return;
 
 			user.Theme = theme;
 
@@ -171,6 +172,18 @@ namespace MyHub.Application.Services.Users
 			if (user is null) return string.Empty;
 
 			return user.Theme;
+		}
+
+		public async Task<bool> UploadUserProfileImage(AccessingUser user)
+		{
+			var profileImage = user.ProfileImage[(user.ProfileImage.LastIndexOf(',') + 1)..];
+
+			return await _azureStorageService.UploadFileToStorage(StorageFolder.ProfileImages, profileImage.Base64ToMemoryStream(), $"{user.Id}.png");
+		}
+
+		public async Task<Stream?> GetUserProfileImage(string userId)
+		{
+			return await _azureStorageService.GetFileFromStorage(StorageFolder.ProfileImages, $"{userId}.png");
 		}
 	}
 }

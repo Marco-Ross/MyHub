@@ -55,7 +55,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 		{
 			//Arrange
 			_userService.Setup(x => x.UserExists(USER.Email)).Returns(true);
-			_userService.Setup(x => x.RegisterUser(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(new AccessingUser());
+			_userService.Setup(x => x.RegisterUserDetails(It.IsAny<AccessingUser>(), It.IsAny<string>())).Returns(new AccessingUser());
 
 			_registerValidator.Setup(x => x.Validate(It.IsAny<UserRegisterValidator>())).Returns(GetValidationResult);
 
@@ -64,7 +64,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 
 			//Assert
 			Assert.True(validator.IsValid);
-			_userService.Verify(x => x.RegisterUser(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()));
+			_userService.Verify(x => x.RegisterUserDetails(It.IsAny<AccessingUser>(), It.IsAny<string>()));
 			_emailService.Verify(x => x.CreateAndSendEmail(It.IsAny<AccountRegisterEmail>()));
 		}
 

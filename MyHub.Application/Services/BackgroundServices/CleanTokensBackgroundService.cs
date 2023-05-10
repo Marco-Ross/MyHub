@@ -28,7 +28,7 @@ namespace MyHub.Application.Services.BackgroundServices
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError("Refresh Token cleaning failed.", ex);
+				_logger.LogError(ex, "Refresh Token cleaning failed.");
 			}
 		}
 	}
