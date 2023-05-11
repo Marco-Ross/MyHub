@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using MyHub.Application.Services.Integration.AzureStorage;
 using MyHub.Domain.ConfigurationOptions.Storage;
+using MyHub.Domain.Enums.Enumerations;
 using MyHub.Domain.Integration.AzureDevOps.Interfaces;
 
 namespace MyHub.Application.Tests.Services.Integration.AzureStorage
@@ -32,7 +33,7 @@ namespace MyHub.Application.Tests.Services.Integration.AzureStorage
 			}
 
 			//Act
-			var uploaded = await _sut.UploadFileToStorage(inMemoryCopy, "NewFile.png");
+			var uploaded = await _sut.UploadFileToStorage(StorageFolder.ProfileImages, inMemoryCopy, "NewFile.png");
 
 			//Assert
 			Assert.True(uploaded);
@@ -53,7 +54,7 @@ namespace MyHub.Application.Tests.Services.Integration.AzureStorage
 			}
 
 			//Act
-			var uploaded = await _sut.GetFileFromStorage("NewFile.png");
+			var uploaded = await _sut.GetFileFromStorage(StorageFolder.ProfileImages, "NewFile.png");
 
 			//Assert
 			Assert.NotNull(uploaded);
