@@ -1,5 +1,7 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using Azure.Storage.Blobs;
+using Azure.Storage;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
@@ -18,6 +20,8 @@ using MyHub.Domain.Authentication;
 using MyHub.Domain.ConfigurationOptions;
 using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.ConfigurationOptions.CorsOriginOptions;
+using MyHub.Domain.ConfigurationOptions.Storage;
+using MyHub.Domain.Enums.Enumerations;
 using MyHub.Domain.Exceptions;
 using MyHub.Domain.RateLimiterOptions;
 using MyHub.Infrastructure.Repository.EntityFramework;
@@ -44,11 +48,13 @@ builder.Services.AddRateLimiter(options => options.AddSlidingWindowLimiter(polic
 	options.QueueLimit = rateOptions.QueueLimit;
 }));
 
-builder.Services.AddDataProtection().UseCryptographicAlgorithms(new AuthenticatedEncryptorConfiguration()
+var storageOptions = builder.Configuration.GetSection(ConfigSections.Storage).Get<StorageOptions>();
+var storageCredentials = new StorageSharedKeyCredential(storageOptions?.AccountName, storageOptions?.AccountKey);
+builder.Services.AddDataProtection().PersistKeysToAzureBlobStorage(new BlobClient(new Uri(storageOptions?.BaseUrl + "keys/keys.xml"), storageCredentials)).UseCryptographicAlgorithms(new AuthenticatedEncryptorConfiguration()
 {
 	EncryptionAlgorithm = EncryptionAlgorithm.AES_256_GCM,
 	ValidationAlgorithm = ValidationAlgorithm.HMACSHA256
-}); //Need to use distributed sharing of these keys if ever hosting on multiple machines. Since keys are stored on machine by default (e.g. Redis, or saving in DB with EF core)
+});
 
 builder.Services.AddCors(options =>
 {
@@ -75,7 +81,7 @@ builder.Services.AddAuthentication(options =>
 	{
 		OnMessageReceived = context =>
 		{
-			context.Token = context.Request.Cookies[AuthConstants.AccessTokenHeader];
+			context.Token = context.Request.Cookies[AuthConstants.AccessToken];
 			return Task.CompletedTask;
 		}
 	};

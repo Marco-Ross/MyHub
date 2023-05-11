@@ -62,7 +62,7 @@ namespace MyHub.Api.Controllers
 			var image = await _userService.GetUserProfileImage(UserId);
 
 			if(image is null)
-				return NotFound();
+				return Ok();
 
 			return File(image, "image/png");
 		}
