@@ -39,7 +39,7 @@ namespace MyHub.Controllers
 
 			var cookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
 			Response.Cookies.Append(AuthConstants.LoggedInHeader, JsonSerializer.Serialize(loginTokens.HubUserDto), cookieOptions);
-			Response.Cookies.Append(AuthConstants.ForgeryTokenHeader, _encryptionService.Encrypt(_authOptions.Cookies.CsrfToken), cookieOptions);
+			Response.Cookies.Append(AuthConstants.ForgeryTokenHeader, _authOptions.Cookies.CsrfToken /*_encryptionService.Encrypt()*/, cookieOptions);
 		}
 
 		private void RemoveCookies()
