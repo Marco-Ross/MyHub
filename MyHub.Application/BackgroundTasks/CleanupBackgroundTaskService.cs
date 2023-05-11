@@ -21,7 +21,7 @@ namespace MyHub.Application.BackgroundTasks
 
 			while (!stoppingToken.IsCancellationRequested)
 			{
-				_logger.LogInformation($"CleanupBackgroundTaskService task performing cleanup.");
+				_logger.LogInformation("CleanupBackgroundTaskService task performing cleanup.");
 
 				try
 				{

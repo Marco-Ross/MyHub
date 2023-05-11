@@ -53,7 +53,10 @@ namespace MyHub.Application.Services.Emails
 
 			var response = await client.SendEmailAsync(message);
 
-			_logger.LogInformation(response.IsSuccessStatusCode ? $"Email to {email.To} queued successfully." : $"Failed to send Email to {email.To}");
+			if (response.IsSuccessStatusCode)
+				_logger.LogInformation("Email to {EmailTo} queued successfully.", email.To);
+			else
+				_logger.LogInformation("Failed to send Email to {EmailTo}", email.To);
 		}
 	}
 }

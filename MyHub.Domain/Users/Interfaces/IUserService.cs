@@ -4,7 +4,7 @@ namespace MyHub.Domain.Users.Interfaces
 {
     public interface IUserService
     {
-		AccessingUser RegisterUser(string email, string username, string password, string registerToken);
+		AccessingUser RegisterUserDetails(AccessingUser newUser, string registerToken);
 		AccessingUser? RevokeUser(string userId, string refreshToken);
 		AccessingUser? RevokeUser(AccessingUser user, string refreshToken);
 		bool UserExists(string email);
@@ -18,5 +18,7 @@ namespace MyHub.Domain.Users.Interfaces
 		Validator VerifyUserPasswordReset(AccessingUser user, string password, string resetPasswordToken);
 		void UpdateUserTheme(string userId, string theme);
 		string GetUserTheme(string userId);
+		Task<bool> UploadUserProfileImage(AccessingUser  user);
+		Task<Stream?> GetUserProfileImage(string userId);
 	}
 }

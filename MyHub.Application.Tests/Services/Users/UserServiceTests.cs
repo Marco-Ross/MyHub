@@ -2,6 +2,7 @@
 using MyHub.Application.Services.Users;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
+using MyHub.Domain.Integration.AzureDevOps.Interfaces;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Infrastructure.Repository.EntityFramework;
@@ -13,6 +14,7 @@ namespace MyHub.Application.Tests.Services.Users
 		private readonly IUserService _userService;
 		private readonly ApplicationDbContext _applicationDbContext = new(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(databaseName: "TestDb").Options);
 		private readonly Mock<IEncryptionService> _encryptionService = new();
+		private readonly Mock<IAzureStorageService> _azureStorageService = new();
 		private readonly AccessingUser USER;
 
 		public UserServiceTests()
@@ -21,7 +23,7 @@ namespace MyHub.Application.Tests.Services.Users
 			_applicationDbContext.Database.EnsureDeleted();
 
 			USER = new AccessingUser { Id = "TestUserId", Email = "Test@Email.com", User = new User { Username = "TestUser" }, Password = "TestPassword" };
-			_userService = new UserService(_applicationDbContext, _encryptionService.Object);
+			_userService = new UserService(_applicationDbContext, _encryptionService.Object, _azureStorageService.Object);
 		}
 
 		[Fact]
@@ -32,7 +34,7 @@ namespace MyHub.Application.Tests.Services.Users
 			_encryptionService.Setup(x => x.HashData(It.IsAny<string>(), out value)).Returns("HashedData");
 
 			//Act
-			var registeredUser = _userService.RegisterUser(USER.Email, USER.User.Username, USER.Password, "TestRegisterToken");
+			var registeredUser = _userService.RegisterUserDetails(USER, "TestRegisterToken");
 
 			//Assert
 			Assert.Equal(1, _applicationDbContext.AccessingUsers.Count());

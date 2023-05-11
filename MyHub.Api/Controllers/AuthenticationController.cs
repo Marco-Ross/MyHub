@@ -34,22 +34,22 @@ namespace MyHub.Controllers
 		private void SetCookieDetails(LoginDetails loginTokens)
 		{
 			var httpOnlyCookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
-			Response.Cookies.Append(AuthConstants.AccessTokenHeader, loginTokens.Tokens.AccessToken, httpOnlyCookieOptions);
-			Response.Cookies.Append(AuthConstants.RefreshTokenHeader, loginTokens.Tokens.RefreshToken, httpOnlyCookieOptions);
+			Response.Cookies.Append(AuthConstants.AccessToken, loginTokens.Tokens.AccessToken, httpOnlyCookieOptions);
+			Response.Cookies.Append(AuthConstants.RefreshToken, loginTokens.Tokens.RefreshToken, httpOnlyCookieOptions);
 
 			var cookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
-			Response.Cookies.Append(AuthConstants.LoggedInHeader, JsonSerializer.Serialize(loginTokens.HubUserDto), cookieOptions);
-			Response.Cookies.Append(AuthConstants.ForgeryTokenHeader, _authOptions.Cookies.CsrfToken /*_encryptionService.Encrypt()*/, cookieOptions);
+			Response.Cookies.Append(AuthConstants.LoggedIn, JsonSerializer.Serialize(loginTokens.HubUserDto), cookieOptions);
+			Response.Cookies.Append(AuthConstants.ForgeryToken, _encryptionService.Encrypt(Guid.NewGuid().ToString()), cookieOptions);
 		}
 
 		private void RemoveCookies()
 		{
 			var cookieDomainOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain };
 
-			Response.Cookies.Delete(AuthConstants.AccessTokenHeader, cookieDomainOptions);
-			Response.Cookies.Delete(AuthConstants.RefreshTokenHeader, cookieDomainOptions);
-			Response.Cookies.Delete(AuthConstants.LoggedInHeader, cookieDomainOptions);
-			Response.Cookies.Delete(AuthConstants.ForgeryTokenHeader, cookieDomainOptions);
+			Response.Cookies.Delete(AuthConstants.AccessToken, cookieDomainOptions);
+			Response.Cookies.Delete(AuthConstants.RefreshToken, cookieDomainOptions);
+			Response.Cookies.Delete(AuthConstants.LoggedIn, cookieDomainOptions);
+			Response.Cookies.Delete(AuthConstants.ForgeryToken, cookieDomainOptions);
 		}
 
 		[AllowAnonymous]
@@ -118,7 +118,7 @@ namespace MyHub.Controllers
 		[HttpPost("Refresh")]
 		public IActionResult Refresh()
 		{
-			if (!(Request.Cookies.TryGetValue(AuthConstants.AccessTokenHeader, out var accessToken) && Request.Cookies.TryGetValue(AuthConstants.RefreshTokenHeader, out var refreshToken)))
+			if (!(Request.Cookies.TryGetValue(AuthConstants.AccessToken, out var accessToken) && Request.Cookies.TryGetValue(AuthConstants.RefreshToken, out var refreshToken)))
 				return BadRequest("Access Token or Refresh Token not set");
 
 			var refreshValidation = _authenticationService.RefreshUserAuthentication(accessToken, refreshToken);
@@ -138,7 +138,7 @@ namespace MyHub.Controllers
 		[HttpPost("Revoke")]
 		public IActionResult Revoke()
 		{
-			if (!Request.Cookies.TryGetValue(AuthConstants.RefreshTokenHeader, out var refreshToken))
+			if (!Request.Cookies.TryGetValue(AuthConstants.RefreshToken, out var refreshToken))
 				return BadRequest("Refresh Token not set");
 
 			var isUserRevoked = _authenticationService.RevokeUser(UserId, refreshToken);

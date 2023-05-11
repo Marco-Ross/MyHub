@@ -23,5 +23,8 @@ namespace MyHub.Domain.Users
 		public bool IsEmailVerified { get; set; }
 
 		public User User { get; set; } = new User();
+
+		[NotMapped]
+		public string ProfileImage { get; set; } = string.Empty;
 	}
 }

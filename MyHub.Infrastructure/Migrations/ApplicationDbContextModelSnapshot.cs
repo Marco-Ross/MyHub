@@ -42,7 +42,7 @@ namespace MyHub.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("MyHub.Domain.Emails.Email", b =>
@@ -83,7 +83,7 @@ namespace MyHub.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Emails");
+                    b.ToTable("Emails", (string)null);
 
                     b.UseTptMappingStrategy();
                 });
@@ -138,7 +138,7 @@ namespace MyHub.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AccessingUsers");
+                    b.ToTable("AccessingUsers", (string)null);
                 });
 
             modelBuilder.Entity("MyHub.Domain.Users.User", b =>
@@ -156,21 +156,21 @@ namespace MyHub.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("MyHub.Domain.Emails.AccountRegisterEmail", b =>
                 {
                     b.HasBaseType("MyHub.Domain.Emails.Email");
 
-                    b.ToTable("AccountRegisterEmails");
+                    b.ToTable("AccountRegisterEmails", (string)null);
                 });
 
             modelBuilder.Entity("MyHub.Domain.Emails.PasswordRecoveryEmail", b =>
                 {
                     b.HasBaseType("MyHub.Domain.Emails.Email");
 
-                    b.ToTable("PasswordRecoveryEmails");
+                    b.ToTable("PasswordRecoveryEmails", (string)null);
                 });
 
             modelBuilder.Entity("MyHub.Domain.Authentication.RefreshToken", b =>

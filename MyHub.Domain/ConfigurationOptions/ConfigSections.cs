@@ -5,5 +5,6 @@
 		public static string Authentication => "Authentication";
 		public static string Domain => "Domain";
 		public static string CorsOrigin => "CorsOrigin";
+		public static string Storage => "Storage";
 	}
 }
