@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MyHub.Application.Helpers;
+using MyHub.Application.Extensions;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Enums.Enumerations;
@@ -11,7 +11,7 @@ using MyHub.Infrastructure.Repository.EntityFramework;
 
 namespace MyHub.Application.Services.Users
 {
-	public class UserService : IUserService
+    public class UserService : IUserService
 	{
 		private readonly ApplicationDbContext _applicationDbContext;
 		private readonly IEncryptionService _encryptionService;
@@ -178,7 +178,7 @@ namespace MyHub.Application.Services.Users
 		{
 			var profileImage = user.ProfileImage[(user.ProfileImage.LastIndexOf(',') + 1)..];
 
-			return await _azureStorageService.UploadFileToStorage(StorageFolder.ProfileImages, profileImage.Base64ToMemoryStream(), $"{user.Id}.png");
+			return await _azureStorageService.UploadFileToStorage(StorageFolder.ProfileImages, profileImage.ToMemoryStream(), $"{user.Id}.png");
 		}
 
 		public async Task<Stream?> GetUserProfileImage(string userId)
