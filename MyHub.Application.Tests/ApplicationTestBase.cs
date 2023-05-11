@@ -24,7 +24,7 @@ namespace MyHub.Application.Tests
 
 		protected static StorageOptions GetStorageOptions()
 		{
-			return new StorageOptions { AccountName = "marcoshubstorage", ImageContainer= "marcohubcontainer", AccountKey = "LxtPUiDdp49gCRyBWk7dNAuZ7X7r8cwxQi6C7o6xNG4gY/BW6113u29Rx87INQYZVYH4bVaRj2nP+AStY/UNxQ==" };
+			return new StorageOptions { AccountName = "marcoshubstorage", ImageContainer= "marcohubcontainer", AccountKey = "" };
 		}
 		
 		protected static AuthenticationOptions GetAuthOptions()
