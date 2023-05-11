@@ -2,11 +2,8 @@
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc;
 using MyHub.Domain.Authentication;
-using Microsoft.Extensions.Options;
-using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.Users.Interfaces;
 using Microsoft.IdentityModel.JsonWebTokens;
-using Azure.Core;
 
 namespace MyHub.Application.Services.Authentication
 {
@@ -20,25 +17,24 @@ namespace MyHub.Application.Services.Authentication
 
 			var _encryptionService = requestScope.GetService(typeof(ICsrfEncryptionService)) as ICsrfEncryptionService;
 			var _userService = requestScope.GetService(typeof(IUserService)) as IUserService;
-			var _configuration = requestScope.GetService(typeof(IOptions<AuthenticationOptions>)) as IOptions<AuthenticationOptions>;
 
-			var hasForgeryCookie = context.HttpContext.Request.Cookies.TryGetValue(AuthConstants.ForgeryTokenHeader, out var forgeryToken);
+			var hasForgeryHeader = context.HttpContext.Request.Headers.TryGetValue(AuthConstants.ForgeryToken, out var forgeryToken);
+			var hasForgeryCookie = context.HttpContext.Request.Cookies.TryGetValue(AuthConstants.ForgeryToken, out var forgeryCookie);
 
-			if (hasForgeryCookie)
+			if (hasForgeryHeader || hasForgeryCookie)
 			{
-				var forgeryTokenDecrypt = forgeryToken;//_encryptionService?.Decrypt();
+				var forgeryTokenDecrypt = _encryptionService?.Decrypt(forgeryToken);
+				var forgeryCookieDecrypt = _encryptionService?.Decrypt(forgeryCookie);
 
-				if (forgeryTokenDecrypt != _configuration?.Value.Cookies.CsrfToken)
+				if (forgeryTokenDecrypt != forgeryCookieDecrypt)
 				{
-					context.HttpContext.Response.Cookies.Delete(AuthConstants.AccessTokenHeader);
-					context.HttpContext.Response.Cookies.Delete(AuthConstants.RefreshTokenHeader);
-					context.HttpContext.Response.Cookies.Delete(AuthConstants.LoggedInHeader);
-					context.HttpContext.Response.Cookies.Delete(AuthConstants.ForgeryTokenHeader);
+					context.HttpContext.Response.Cookies.Delete(AuthConstants.AccessToken);
+					context.HttpContext.Response.Cookies.Delete(AuthConstants.RefreshToken);
+					context.HttpContext.Response.Cookies.Delete(AuthConstants.LoggedIn);
+					context.HttpContext.Response.Cookies.Delete(AuthConstants.ForgeryToken);
 
-					if (context.HttpContext.Request.Cookies.TryGetValue(AuthConstants.RefreshTokenHeader, out var refreshToken))
-					{
+					if (context.HttpContext.Request.Cookies.TryGetValue(AuthConstants.RefreshToken, out var refreshToken))
 						_userService?.RevokeUser(context.HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? string.Empty, refreshToken);
-					}
 
 					context.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
 					//signalR logout

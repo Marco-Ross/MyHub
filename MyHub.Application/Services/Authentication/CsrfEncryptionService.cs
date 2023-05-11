@@ -28,7 +28,7 @@ namespace MyHub.Application.Services.Authentication
 			}
 			catch (CryptographicException e)
 			{
-				_logger.LogError("CSRF encryption failed.", e);
+				_logger.LogError(e, "CSRF encryption failed.");
 				return string.Empty;
 			}
 		}
@@ -45,7 +45,7 @@ namespace MyHub.Application.Services.Authentication
 			}
 			catch (CryptographicException e)
 			{
-				_logger.LogError("CSRF decryption failed.", e);
+				_logger.LogError(e, "CSRF decryption failed.");
 				return string.Empty;
 			}
 		}

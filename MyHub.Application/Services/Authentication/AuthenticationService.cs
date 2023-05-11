@@ -49,7 +49,9 @@ namespace MyHub.Application.Services.Authentication
 
 			var registerToken = _encryptionService.GenerateSecureToken();
 
-			var registeredUser = _userService.RegisterUser(accessingUser.Email, accessingUser.User.Username, accessingUser.Password, registerToken);
+			var registeredUser = _userService.RegisterUserDetails(accessingUser, registerToken);
+
+			await _userService.UploadUserProfileImage(registeredUser);
 
 			await _emailService.CreateAndSendEmail(new AccountRegisterEmail
 			{

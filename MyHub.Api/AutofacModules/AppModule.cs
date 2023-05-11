@@ -10,6 +10,7 @@ using MyHub.Application.Services.BackgroundServices;
 using MyHub.Application.Services.Emails;
 using MyHub.Application.Services.Emails.EmailConstructors;
 using MyHub.Application.Services.Integration.AzureDevOps;
+using MyHub.Application.Services.Integration.AzureStorage;
 using MyHub.Application.Services.Users;
 using MyHub.Domain;
 using MyHub.Domain.Authentication.Interfaces;
@@ -56,6 +57,7 @@ namespace MyHub.Api.AutofacModules
 			builder.RegisterType<CleanTokensBackgroundService>().As<ICleanTokensBackgroundService>().InstancePerLifetimeScope();
 			builder.RegisterAssemblyTypes(typeof(IApplicationAssemblyMarker).Assembly).AsClosedTypesOf(typeof(IHubResolver<>)).InstancePerLifetimeScope();
 			builder.RegisterType<UserIdProvider>().As<IUserIdProvider>().SingleInstance();
+			builder.RegisterType<AzureStorageService>().As<IAzureStorageService>().SingleInstance();
 
 			//CacheDecorators
 			builder.RegisterDecorator<AzureDevOpsCacheService, IAzureDevOpsService>();
