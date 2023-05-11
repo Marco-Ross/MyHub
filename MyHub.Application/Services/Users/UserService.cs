@@ -11,7 +11,7 @@ using MyHub.Infrastructure.Repository.EntityFramework;
 
 namespace MyHub.Application.Services.Users
 {
-    public class UserService : IUserService
+	public class UserService : IUserService
 	{
 		private readonly ApplicationDbContext _applicationDbContext;
 		private readonly IEncryptionService _encryptionService;
@@ -29,13 +29,13 @@ namespace MyHub.Application.Services.Users
 			var hashedPassword = _encryptionService.HashData(newUser.Password, out var passwordSalt);
 			var hashedRegisterToken = _encryptionService.HashData(registerToken, out var tokenSalt);
 
-			newUser.User.Id =  Guid.NewGuid().ToString();
+			newUser.User.Id = Guid.NewGuid().ToString();
 			newUser.Password = hashedPassword;
 			newUser.PasswordSalt = Convert.ToHexString(passwordSalt);
 			newUser.RegisterToken = hashedRegisterToken;
 			newUser.RegisterTokenSalt = Convert.ToHexString(tokenSalt);
 			newUser.RegisterTokenExpireDate = DateTime.Now.AddHours(3);
-	
+
 			var savedUser = _applicationDbContext.AccessingUsers.Add(newUser);
 
 			_applicationDbContext.SaveChanges();
@@ -176,6 +176,9 @@ namespace MyHub.Application.Services.Users
 
 		public async Task<bool> UploadUserProfileImage(AccessingUser user)
 		{
+			if (string.IsNullOrWhiteSpace(user.ProfileImage))
+				return false;
+
 			var profileImage = user.ProfileImage[(user.ProfileImage.LastIndexOf(',') + 1)..];
 
 			return await _azureStorageService.UploadFileToStorage(StorageFolder.ProfileImages, profileImage.ToMemoryStream(), $"{user.Id}.png");

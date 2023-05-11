@@ -10,7 +10,6 @@ namespace MyHub.Domain.Users.UsersDto
 		public string Username { get; set; } = string.Empty;
 		[Required]
 		public string Password { get; set; } = string.Empty;
-		[Required]
 		public string ProfileImage { get; set; } = string.Empty;
     }
 }
