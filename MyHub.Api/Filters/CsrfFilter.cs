@@ -26,7 +26,7 @@ namespace MyHub.Application.Services.Authentication
 
 			if (hasForgeryCookie)
 			{
-				var forgeryTokenDecrypt = _encryptionService?.Decrypt(forgeryToken);
+				var forgeryTokenDecrypt = forgeryToken;//_encryptionService?.Decrypt();
 
 				if (forgeryTokenDecrypt != _configuration?.Value.Cookies.CsrfToken)
 				{
