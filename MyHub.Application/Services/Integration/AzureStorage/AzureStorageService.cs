@@ -22,7 +22,7 @@ namespace MyHub.Application.Services.Integration.AzureStorage
 
 		private BlobClient GetBlobClient(StorageFolder storageFolder, string fileName)
 		{
-			var blobUri = new Uri(_storageOptions.BaseUrl + storageFolder.Name + fileName);
+			var blobUri = new Uri(_storageOptions.BaseUrl+ _storageOptions.BaseFolder + storageFolder.Name + fileName);
 
 			var storageCredentials = new StorageSharedKeyCredential(_storageOptions.AccountName, _storageOptions.AccountKey);
 

@@ -6,5 +6,6 @@
 		public string ImageContainer { get; set; } = string.Empty;
 		public string AccountKey { get; set; } = string.Empty;
 		public string BaseUrl { get; set; } = string.Empty;
+		public string BaseFolder { get; set; } = string.Empty;
 	}
 }
