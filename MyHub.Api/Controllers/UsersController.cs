@@ -41,20 +41,6 @@ namespace MyHub.Api.Controllers
 		public void Delete(int id)
 		{
 		}
-
-		[HttpPut("Theme")]
-		public IActionResult UpdateUserTheme(ThemeOptionsDto themeOptionsDto)
-		{
-			_userService.UpdateUserTheme(UserId, themeOptionsDto.Theme);
-
-			return Ok();
-		}
-
-		[HttpGet("Theme")]
-		public IActionResult GetUserTheme()
-		{
-			return Ok(new { Theme = _userService.GetUserTheme(UserId) });
-		}
 		
 		[HttpGet("ProfileImage")]
 		public async Task<IActionResult> GetProfileImage()

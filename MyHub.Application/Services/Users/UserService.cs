@@ -154,26 +154,6 @@ namespace MyHub.Application.Services.Users
 			_applicationDbContext.SaveChanges();
 		}
 
-		public void UpdateUserTheme(string userId, string theme)
-		{
-			var user = GetUserById(userId);
-
-			if (user is null) return;
-
-			user.Theme = theme;
-
-			_applicationDbContext.SaveChanges();
-		}
-
-		public string GetUserTheme(string userId)
-		{
-			var user = GetUserById(userId);
-
-			if (user is null) return string.Empty;
-
-			return user.Theme;
-		}
-
 		public async Task<bool> UploadUserProfileImage(AccessingUser user)
 		{
 			if (string.IsNullOrWhiteSpace(user.ProfileImage))
