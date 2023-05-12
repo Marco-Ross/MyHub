@@ -23,13 +23,13 @@ namespace MyHub.Application.Services.Authentication
 	{
 		private readonly DomainOptions _domainOptions;
 		private readonly AuthenticationOptions _authOptions;
-		private readonly IUserService _userService;
+		private readonly IUsersService _userService;
 		private readonly IEncryptionService _encryptionService;
 		private readonly IMapper _mapper;
 		private readonly IEmailService _emailService;
 		private readonly IValidator<UserRegisterValidator> _registerValidator;
 
-		public AuthenticationService(IOptions<DomainOptions> domainOptions, IOptions<AuthenticationOptions> authOptions, IUserService userService, IEncryptionService passwordEncryptionService, IMapper mapper, IEmailService emailService, IValidator<UserRegisterValidator> registerValidator)
+		public AuthenticationService(IOptions<DomainOptions> domainOptions, IOptions<AuthenticationOptions> authOptions, IUsersService userService, IEncryptionService passwordEncryptionService, IMapper mapper, IEmailService emailService, IValidator<UserRegisterValidator> registerValidator)
 		{
 			_authOptions = authOptions.Value;
 			_domainOptions = domainOptions.Value;

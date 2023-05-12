@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyHub.Domain.Authentication;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Domain.Users.UsersDto;
+using System.Text.Json;
 
 namespace MyHub.Api.Controllers
 {
@@ -12,9 +14,9 @@ namespace MyHub.Api.Controllers
 	public class UsersController : BaseController
 	{
 		private readonly IMapper _mapper;
-		private readonly IUserService _userService;
+		private readonly IUsersService _userService;
 
-		public UsersController(IUserService userService, IMapper mapper)
+		public UsersController(IUsersService userService, IMapper mapper)
 		{
 			_userService = userService;
 			_mapper = mapper;
@@ -41,13 +43,27 @@ namespace MyHub.Api.Controllers
 		public void Delete(int id)
 		{
 		}
-		
+
+		[HttpPut("Theme")]
+		public IActionResult UpdateUserTheme(ThemeOptionsDto themeOptionsDto)
+		{
+			_userService.UpdateUserTheme(UserId, themeOptionsDto.Theme);
+
+			return Ok();
+		}
+
+		[HttpGet("Theme")]
+		public IActionResult GetUserTheme()
+		{
+			return Ok(new { Theme = _userService.GetUserTheme(UserId) });
+		}
+
 		[HttpGet("ProfileImage")]
 		public async Task<IActionResult> GetProfileImage()
 		{
 			var image = await _userService.GetUserProfileImage(UserId);
 
-			if(image is null)
+			if (image is null)
 				return Ok();
 
 			return File(image, "image/png");

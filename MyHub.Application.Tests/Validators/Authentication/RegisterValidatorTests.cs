@@ -10,7 +10,7 @@ namespace MyHub.Application.Tests.Validators.Authentication
 	public class RegisterValidatorTests
 	{
 		private readonly RegisterValidator _registerValidator;
-		private readonly Mock<IUserService> _userService = new();
+		private readonly Mock<IUsersService> _userService = new();
 
 		public RegisterValidatorTests()
 		{
