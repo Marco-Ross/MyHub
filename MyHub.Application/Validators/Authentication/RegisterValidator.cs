@@ -7,7 +7,7 @@ namespace MyHub.Application.Validators.Authentication
 {
     public class RegisterValidator : AbstractValidator<UserRegisterValidator>
 	{
-		public RegisterValidator(IUserService userservice)
+		public RegisterValidator(IUsersService userservice)
 		{
 			RuleFor(x => userservice.UserExists(x.AccessingUser.Email)).Equal(false).WithMessage("Email address already exists.");
 			RuleFor(x => x.AccessingUser.Email).NotEmpty().WithMessage("Email cannot be empty.").WithErrorCode("EmptyEmail");

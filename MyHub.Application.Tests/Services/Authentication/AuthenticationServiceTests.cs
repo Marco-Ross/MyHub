@@ -20,7 +20,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 
 		private readonly IOptions<DomainOptions> _domainOptions = Options.Create(GetDomainOptions());
 		private readonly IOptions<AuthenticationOptions> _authenticationOptions = Options.Create(GetAuthOptions());
-		private readonly Mock<IUserService> _userService = new();
+		private readonly Mock<IUsersService> _userService = new();
 		private readonly Mock<IEncryptionService> _encryptionService = new();
 		private readonly Mock<IMapper> _mapper = new();
 		private readonly Mock<IEmailService> _emailService = new();

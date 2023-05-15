@@ -16,7 +16,7 @@ namespace MyHub.Application.Services.Authentication
 			var requestScope = context.HttpContext.RequestServices;
 
 			var _encryptionService = requestScope.GetService(typeof(ICsrfEncryptionService)) as ICsrfEncryptionService;
-			var _userService = requestScope.GetService(typeof(IUserService)) as IUserService;
+			var _userService = requestScope.GetService(typeof(IUsersService)) as IUsersService;
 
 			var hasForgeryHeader = context.HttpContext.Request.Headers.TryGetValue(AuthConstants.ForgeryToken, out var forgeryToken);
 			var hasForgeryCookie = context.HttpContext.Request.Cookies.TryGetValue(AuthConstants.ForgeryToken, out var forgeryCookie);

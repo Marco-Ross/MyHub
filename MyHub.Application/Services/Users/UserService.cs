@@ -11,7 +11,7 @@ using MyHub.Infrastructure.Repository.EntityFramework;
 
 namespace MyHub.Application.Services.Users
 {
-	public class UserService : IUserService
+	public class UserService : IUsersService
 	{
 		private readonly ApplicationDbContext _applicationDbContext;
 		private readonly IEncryptionService _encryptionService;
@@ -167,6 +167,26 @@ namespace MyHub.Application.Services.Users
 		public async Task<Stream?> GetUserProfileImage(string userId)
 		{
 			return await _azureStorageService.GetFileFromStorage(StorageFolder.ProfileImages, $"{userId}.png");
+		}
+
+		public void UpdateUserTheme(string userId, string theme)
+		{
+			var user = GetUserById(userId);
+
+			if (user is null) return;
+
+			user.Theme = theme;
+
+			_applicationDbContext.SaveChanges();
+		}
+
+		public string GetUserTheme(string userId)
+		{
+			var user = GetUserById(userId);
+
+			if (user is null) return string.Empty;
+
+			return user.Theme;
 		}
 	}
 }
