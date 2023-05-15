@@ -11,7 +11,7 @@ namespace MyHub.Application.Tests.Services.Users
 {
 	public class UserServiceTests : ApplicationTestBase
 	{
-		private readonly IUserService _userService;
+		private readonly IUsersService _userService;
 		private readonly ApplicationDbContext _applicationDbContext = new(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(databaseName: "TestDb").Options);
 		private readonly Mock<IEncryptionService> _encryptionService = new();
 		private readonly Mock<IAzureStorageService> _azureStorageService = new();

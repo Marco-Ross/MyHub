@@ -47,7 +47,7 @@ namespace MyHub.Api.AutofacModules
 			builder.RegisterType<PasswordEmailConstructor>();
 
 			builder.RegisterType<AuthenticationService>().As<IAuthenticationService>().InstancePerLifetimeScope();
-			builder.RegisterType<UserService>().As<IUserService>().InstancePerLifetimeScope();
+			builder.RegisterType<UserService>().As<IUsersService>().InstancePerLifetimeScope();
 			builder.RegisterType<CsrfEncryptionService>().As<ICsrfEncryptionService>().InstancePerLifetimeScope();
 			builder.RegisterType<EncryptionService>().As<IEncryptionService>().InstancePerLifetimeScope();
 			builder.RegisterType<EmailService>().As<IEmailService>().InstancePerLifetimeScope();
@@ -61,6 +61,7 @@ namespace MyHub.Api.AutofacModules
 
 			//CacheDecorators
 			builder.RegisterDecorator<AzureDevOpsCacheService, IAzureDevOpsService>();
+			builder.RegisterDecorator<UsersCacheService, IUsersService>();
 		}
 	}
 }

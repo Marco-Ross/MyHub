@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyHub.Infrastructure.Repository.EntityFramework;
 
@@ -11,9 +12,11 @@ using MyHub.Infrastructure.Repository.EntityFramework;
 namespace MyHub.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230512143544_ReAddTheme")]
+    partial class ReAddTheme
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -42,7 +45,7 @@ namespace MyHub.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens", (string)null);
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Emails.Email", b =>
@@ -83,7 +86,7 @@ namespace MyHub.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Emails", (string)null);
+                    b.ToTable("Emails");
 
                     b.UseTptMappingStrategy();
                 });
@@ -138,7 +141,7 @@ namespace MyHub.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AccessingUsers", (string)null);
+                    b.ToTable("AccessingUsers");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Users.User", b =>
@@ -156,21 +159,21 @@ namespace MyHub.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Emails.AccountRegisterEmail", b =>
                 {
                     b.HasBaseType("MyHub.Domain.Emails.Email");
 
-                    b.ToTable("AccountRegisterEmails", (string)null);
+                    b.ToTable("AccountRegisterEmails");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Emails.PasswordRecoveryEmail", b =>
                 {
                     b.HasBaseType("MyHub.Domain.Emails.Email");
 
-                    b.ToTable("PasswordRecoveryEmails", (string)null);
+                    b.ToTable("PasswordRecoveryEmails");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Authentication.RefreshToken", b =>
