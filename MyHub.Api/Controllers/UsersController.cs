@@ -1,10 +1,8 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MyHub.Domain.Authentication;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Domain.Users.UsersDto;
-using System.Text.Json;
 
 namespace MyHub.Api.Controllers
 {

@@ -101,18 +101,19 @@ namespace MyHub.Application.Services.Users
 		{
 			_userService.UpdateUserTheme(userId, theme);
 
-			SetCache(CacheKeys.UserTheme, theme);
+			SetCache(CacheKeys.UserTheme + userId, theme);
 		}
 
 		public string GetUserTheme(string userId)
 		{
-			var cacheValue = GetCache<string>(CacheKeys.UserTheme);
+			var cacheValue = GetCache<string>(CacheKeys.UserTheme + userId);
+
 			if (cacheValue is not null)
 				return cacheValue;
 
 			var userTheme = _userService.GetUserTheme(userId);
 
-			return SetCache(CacheKeys.UserTheme, userTheme);
+			return SetCache(CacheKeys.UserTheme + userId, userTheme);
 		}
 	}
 }
