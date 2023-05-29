@@ -66,6 +66,8 @@ namespace MyHub.Application.Services.Authentication
 			return new Validator();
 		}
 
+		public async Task DeleteUser(string userId) => await _userService.DeleteUser(userId);
+
 		public Validator VerifyUserEmail(string userId, string token)
 		{
 			var user = _userService.GetFullAccessingUserById(userId);
@@ -75,12 +77,32 @@ namespace MyHub.Application.Services.Authentication
 			return _userService.VerifyUserRegistration(user, token);
 		}
 
+		public Validator ResetPasswordLoggedIn(string userId, string oldPassword, string newPassword, string refreshToken)
+		{
+			var user = _userService.GetFullAccessingUserById(userId);
+
+			if (user is null)
+				return new Validator().AddError("User does not exist.");
+
+			if (!_encryptionService.VerifyData(oldPassword, user.Password, user.PasswordSalt))
+				return new Validator().AddError("Old password is invalid.");
+
+			_userService.RevokeUserLoginsExceptCurrent(user, refreshToken);
+
+			_userService.ResetUserPasswordLoggedIn(user, newPassword);
+
+			return new Validator();
+		}
+
 		public async Task<Validator> ResetPasswordEmail(string email)
 		{
 			var user = _userService.GetFullAccessingUserByEmail(email);
 
 			if (user is null)
 				return new Validator().AddError("Email address does not exist.");
+
+			if (!user.IsEmailVerified)
+				return new Validator().AddError("Email address not verified.");
 
 			if (user.ResetPasswordTokenExpireDate.HasValue && user.ResetPasswordTokenExpireDate > DateTime.Now)
 				return new Validator().AddError("A valid reset password link has already been sent.");
@@ -127,6 +149,19 @@ namespace MyHub.Application.Services.Authentication
 			_userService.AddRefreshToken(authenticatingUser, tokens.RefreshToken);
 
 			return new Validator<LoginDetails>().Response(SetLoginDetails(tokens, authenticatingUser));
+		}
+
+		public string AuthenticateUserGetTokens(string userid, string email, string password)
+		{
+			var authenticatingUser = _userService.GetFullAccessingUserByEmail(email);
+
+			if (authenticatingUser is null || authenticatingUser?.Id != userid)
+				return string.Empty;
+
+			if (!_encryptionService.VerifyData(password, authenticatingUser.Password, authenticatingUser.PasswordSalt))
+				return string.Empty;
+
+			return GenerateAccessTokens(authenticatingUser).AccessToken;
 		}
 
 		public Validator<LoginDetails> RefreshUserAuthentication(string accessToken, string refreshToken)
@@ -195,18 +230,7 @@ namespace MyHub.Application.Services.Authentication
 
 		private ClaimsPrincipal? GetPrincipleFromToken(string token)
 		{
-			var tokenKey = Encoding.UTF8.GetBytes(_authOptions.JWT.Key);
-
-			var tokenValidationParameters = new TokenValidationParameters
-			{
-				ValidateAudience = true,
-				ValidateIssuer = true,
-				ValidateIssuerSigningKey = true,
-				ValidateLifetime = false,
-				ValidAudience = _authOptions.JWT.Audience,
-				ValidIssuer = _authOptions.JWT.Issuer,
-				IssuerSigningKey = new SymmetricSecurityKey(tokenKey)
-			};
+			var tokenValidationParameters = GetValidationParametersNoLifetime();
 
 			var tokenHandler = new JwtSecurityTokenHandler();
 			try
@@ -222,6 +246,101 @@ namespace MyHub.Application.Services.Authentication
 			{
 				return null;
 			}
+		}
+
+		private TokenValidationParameters GetValidationParametersWithLifetime()
+		{
+			var validationParams = GetValidationParameters();
+
+			validationParams.ValidateLifetime = true;
+
+			return validationParams;
+		}
+
+		private TokenValidationParameters GetValidationParametersNoLifetime()
+		{
+			var validationParams = GetValidationParameters();
+
+			validationParams.ValidateLifetime = false;
+
+			return validationParams;
+		}
+
+		private TokenValidationParameters GetValidationParameters()
+		{
+			var tokenKey = Encoding.UTF8.GetBytes(_authOptions.JWT.Key);
+
+			return new TokenValidationParameters
+			{
+				ValidateAudience = true,
+				ValidateIssuer = true,
+				ValidateIssuerSigningKey = true,
+				ValidAudience = _authOptions.JWT.Audience,
+				ValidIssuer = _authOptions.JWT.Issuer,
+				IssuerSigningKey = new SymmetricSecurityKey(tokenKey)
+			};
+		}
+
+		private bool ValidateToken(string token)
+		{
+			var tokenHandler = new JwtSecurityTokenHandler();
+			var validationParameters = GetValidationParametersWithLifetime();
+			try
+			{
+				var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
+				return true;
+			}
+			catch (Exception ex)
+			{
+				return false;
+			}
+		}
+
+		public async Task<Validator> ChangeUserEmail(string userId, string newEmail, string accessToken)
+		{
+			var validToken = ValidateToken(accessToken);
+
+			if (!validToken)
+				return new Validator().AddError("Invalid change email attempt.");
+
+			if (_userService.UserExists(newEmail))
+				return new Validator().AddError("Email already exists.");
+
+			var user = _userService.GetFullAccessingUserById(userId);
+
+			if (user is null)
+				return new Validator().AddError("User does not exist.");
+
+			if (user.ChangeEmailTokenExpireDate.HasValue && user.ChangeEmailTokenExpireDate > DateTime.Now)
+				return new Validator().AddError("A valid reset email link has already been sent.");
+
+			var changeEmailToken = _encryptionService.GenerateSecureToken();
+
+			_userService.UpdateUserEmail(user, newEmail, changeEmailToken);
+
+			await _emailService.CreateAndSendEmail(new EmailChangeEmail
+			{
+				UserId = userId,
+				To = newEmail,
+				ToName = user.User.Username,
+				Subject = "Email Change Request",
+				PreviousEmail = user.Email,
+				ChangeEmailToken = changeEmailToken,
+				ClientDomainAddress = _domainOptions.Client
+			});
+
+			return new Validator();
+		}
+
+		public Validator ChangeUserEmailComplete(string userId, string changeEmailToken)
+		{
+			var user = _userService.GetFullAccessingUserById(userId);
+			if (user is null) return new Validator().AddError("Invalid user Id.");
+			if (string.IsNullOrWhiteSpace(changeEmailToken)) return new Validator().AddError("Invalid token.");
+
+			_userService.RevokeAllUserLogins(user);
+
+			return _userService.ChangeUserEmailComplete(user, changeEmailToken);
 		}
 	}
 }

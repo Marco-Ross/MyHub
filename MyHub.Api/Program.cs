@@ -21,7 +21,6 @@ using MyHub.Domain.ConfigurationOptions;
 using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.ConfigurationOptions.CorsOriginOptions;
 using MyHub.Domain.ConfigurationOptions.Storage;
-using MyHub.Domain.Enums.Enumerations;
 using MyHub.Domain.Exceptions;
 using MyHub.Domain.RateLimiterOptions;
 using MyHub.Infrastructure.Repository.EntityFramework;
@@ -110,6 +109,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers(config =>
 {
 	config.Filters.Add(typeof(CsrfFilter)); //Used on all controllers
+	config.Filters.Add(typeof(LoggedInFilter)); //Used on all controllers
 });
 
 builder.Services.AddScoped<ApiKeyAuthFilter>(); //Added by serviceFilter attribute

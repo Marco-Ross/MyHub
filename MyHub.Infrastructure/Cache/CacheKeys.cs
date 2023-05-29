@@ -3,6 +3,6 @@
 	public static class CacheKeys
 	{
 		public static string WorkItemResults => "WorkItemResults";
-		public static string UserTheme => "UserTheme";
+		public static string BlacklistedLogins => "BlacklistedLogins";
 	}
 }

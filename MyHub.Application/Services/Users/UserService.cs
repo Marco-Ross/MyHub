@@ -3,7 +3,8 @@ using MyHub.Application.Extensions;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Enums.Enumerations;
-using MyHub.Domain.Integration.AzureDevOps.Interfaces;
+using MyHub.Domain.Integration.AzureDevOps.AzureStorage;
+using MyHub.Domain.Integration.AzureDevOps.AzureStorage.Interfaces;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Domain.Validation;
@@ -65,6 +66,16 @@ namespace MyHub.Application.Services.Users
 			return new Validator();
 		}
 
+		public AccessingUser ResetUserPasswordLoggedIn(AccessingUser user, string newPassword)
+		{
+			user.Password = _encryptionService.HashData(newPassword, out var passwordSalt);
+			user.PasswordSalt = Convert.ToHexString(passwordSalt);
+
+			_applicationDbContext.SaveChanges();
+
+			return user;
+		}
+
 		public AccessingUser ResetUserPassword(AccessingUser user, string resetToken)
 		{
 			var hashedResetToken = _encryptionService.HashData(resetToken, out var tokenSalt);
@@ -122,6 +133,25 @@ namespace MyHub.Application.Services.Users
 
 			return user;
 		}
+		
+		public void RevokeAllUserLogins(AccessingUser user)
+		{
+			if (user is null)
+				return;
+
+			user.RefreshTokens = new List<RefreshToken>();
+
+			_applicationDbContext.SaveChanges();
+		}
+		public void RevokeUserLoginsExceptCurrent(AccessingUser user, string currentRefreshToken)
+		{
+			if (user is null)
+				return;
+
+			user.RefreshTokens = user.RefreshTokens.Where(x=> x.Token == currentRefreshToken).ToList();
+
+			_applicationDbContext.SaveChanges();
+		}
 
 		public bool UserExists(string email) => _applicationDbContext.AccessingUsers.Any(x => x.Email == email);
 
@@ -159,15 +189,30 @@ namespace MyHub.Application.Services.Users
 			if (string.IsNullOrWhiteSpace(user.ProfileImage))
 				return false;
 
-			var profileImage = user.ProfileImage[(user.ProfileImage.LastIndexOf(',') + 1)..];
-
-			return await _azureStorageService.UploadFileToStorage(StorageFolder.ProfileImages, profileImage.ToMemoryStream(), $"{user.Id}.png");
+			return await UpdateUserProfileImage(user.Id, user.ProfileImage);
 		}
 
-		public async Task<Stream?> GetUserProfileImage(string userId)
+		public async Task<bool> UpdateUserProfileImage(string userId, string image)
 		{
-			return await _azureStorageService.GetFileFromStorage(StorageFolder.ProfileImages, $"{userId}.png");
+			var profileImage = image[(image.LastIndexOf(',') + 1)..];
+
+			return await _azureStorageService.UploadFileToStorage(profileImage.ToMemoryStream(), GetProfileImageStorageOptions(userId));
 		}
+
+		public async Task<Stream?> GetUserProfileImage(string userId) 
+			=> await _azureStorageService.GetFileFromStorage(GetProfileImageStorageOptions(userId));
+
+		public async Task<bool> DeleteUserProfileImage(string userId) 
+			=> await _azureStorageService.RemoveFile(GetProfileImageStorageOptions(userId));
+
+		private static string GetUserProfileImageName(string userId) => $"{userId}.png";
+
+		private static AzureStorageOptions GetProfileImageStorageOptions(string userId) => new()
+		{
+			StorageFolder = StorageFolder.ProfileImages,
+			FileName = GetUserProfileImageName(userId),
+			OverWrite = true
+		};
 
 		public void UpdateUserTheme(string userId, string theme)
 		{
@@ -187,6 +232,69 @@ namespace MyHub.Application.Services.Users
 			if (user is null) return string.Empty;
 
 			return user.Theme;
+		}
+
+		public void UpdateUserAccount(AccessingUser accessingUser, string userId)
+		{
+			var user = GetFullAccessingUserById(userId);
+
+			if (user is null)
+				return;
+
+			user.User.Username = accessingUser.User.Username;
+			user.User.Name = accessingUser.User.Name;
+			user.User.Surname = accessingUser.User.Surname;
+
+			_applicationDbContext.SaveChanges();
+		}
+
+		public async Task DeleteUser(string userId)
+		{
+			var user = GetUserById(userId);
+
+			if (user is null) return;
+
+			_applicationDbContext.Remove(user);
+
+			await DeleteUserProfileImage(userId);
+
+			_applicationDbContext.SaveChanges();
+		}
+
+		public void UpdateUserEmail(AccessingUser user, string newEmail, string changeEmailToken)
+		{
+			if (user is null) throw new ArgumentNullException("User", "User cannot be null.");
+
+			var hashedEmailChangeToken = _encryptionService.HashData(changeEmailToken, out var tokenSalt);
+
+			user.ChangeEmailToken = hashedEmailChangeToken;
+			user.ChangeEmailTokenSalt = Convert.ToHexString(tokenSalt);
+			user.ChangeEmailTokenExpireDate = DateTime.Now.AddHours(1);
+			user.TemporaryNewEmail = newEmail;
+
+			_applicationDbContext.SaveChanges();
+		}
+
+		public Validator ChangeUserEmailComplete(AccessingUser user, string changeEmailToken)
+		{
+			if (string.IsNullOrWhiteSpace(user.ChangeEmailToken))
+				return new Validator().AddError("Change email address link invalid.");
+
+			if (!_encryptionService.VerifyData(changeEmailToken, user.ChangeEmailToken, user.ChangeEmailTokenSalt))
+				return new Validator().AddError("Cannot change email address with invalid link.");
+
+			if (user.ChangeEmailTokenExpireDate is null || user.ChangeEmailTokenExpireDate < DateTime.Now)
+				return new Validator().AddError("Change email address link has expired.");
+
+			user.Email = user.TemporaryNewEmail;
+			user.TemporaryNewEmail = string.Empty;
+			user.ChangeEmailToken = string.Empty;
+			user.ChangeEmailTokenSalt = string.Empty;
+			user.ChangeEmailTokenExpireDate = null;
+
+			_applicationDbContext.SaveChanges();
+
+			return new Validator();
 		}
 	}
 }

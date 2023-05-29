@@ -27,9 +27,12 @@ namespace MyHub.Application.Services.Users
 			return cacheValue;
 		}
 
-		private T SetCache<T>(string key, T value)
+		private T SetCache<T>(string key, T value, MemoryCacheEntryOptions? cacheOptions = default)
 		{
-			return _memoryCache.Set(key, value, _cacheOptions);
+			if (cacheOptions is not null)
+				return _memoryCache.Set(key, value, _cacheOptions);
+
+			return _memoryCache.Set(key, value, cacheOptions);
 		}
 
 		public AccessingUser RegisterUserDetails(AccessingUser newUser, string registerToken)
@@ -77,6 +80,11 @@ namespace MyHub.Application.Services.Users
 			return _userService.VerifyUserRegistration(user, token);
 		}
 
+		public AccessingUser ResetUserPasswordLoggedIn(AccessingUser user, string newPassword)
+		{
+			return _userService.ResetUserPasswordLoggedIn(user, newPassword);
+		}
+
 		public AccessingUser ResetUserPassword(AccessingUser user, string resetToken)
 		{
 			return _userService.ResetUserPassword(user, resetToken);
@@ -92,6 +100,11 @@ namespace MyHub.Application.Services.Users
 			return await _userService.UploadUserProfileImage(user);
 		}
 
+		public async Task<bool> UpdateUserProfileImage(string userId, string image)
+		{
+			return await _userService.UpdateUserProfileImage(userId, image);
+		}
+
 		public async Task<Stream?> GetUserProfileImage(string userId)
 		{
 			return await _userService.GetUserProfileImage(userId);
@@ -100,20 +113,62 @@ namespace MyHub.Application.Services.Users
 		public void UpdateUserTheme(string userId, string theme)
 		{
 			_userService.UpdateUserTheme(userId, theme);
-
-			SetCache(CacheKeys.UserTheme + userId, theme);
 		}
 
 		public string GetUserTheme(string userId)
 		{
-			var cacheValue = GetCache<string>(CacheKeys.UserTheme + userId);
+			return _userService.GetUserTheme(userId);
+		}
 
-			if (cacheValue is not null)
-				return cacheValue;
+		public void UpdateUserAccount(AccessingUser accessingUser, string userId)
+		{
+			_userService.UpdateUserAccount(accessingUser, userId);
+		}
 
-			var userTheme = _userService.GetUserTheme(userId);
+		public async Task DeleteUser(string userId)
+		{
+			await _userService.DeleteUser(userId);
+		}
 
-			return SetCache(CacheKeys.UserTheme + userId, userTheme);
+		public async Task<bool> DeleteUserProfileImage(string userId)
+		{
+			return await _userService.DeleteUserProfileImage(userId);
+		}
+
+		public void UpdateUserEmail(AccessingUser user, string newEmail, string emailChangeToken)
+		{
+			_userService.UpdateUserEmail(user, newEmail, emailChangeToken);
+		}
+
+		public Validator ChangeUserEmailComplete(AccessingUser user, string changeEmailToken)
+		{
+			return _userService.ChangeUserEmailComplete(user, changeEmailToken);
+		}
+
+		public void RevokeAllUserLogins(AccessingUser user)
+		{
+			var cacheValue = GetCache<List<string>>(CacheKeys.BlacklistedLogins + user.Id) ?? new List<string>();
+
+			var blacklisted = user.RefreshTokens.Select(x => x.Token).ToList();
+
+			_userService.RevokeAllUserLogins(user);
+
+			cacheValue.AddRange(blacklisted);
+
+			SetCache(CacheKeys.BlacklistedLogins + user.Id, cacheValue, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(20) });
+		}
+		
+		public void RevokeUserLoginsExceptCurrent(AccessingUser user, string currentRefreshToken)
+		{
+			var cacheValue = GetCache<List<string>>(CacheKeys.BlacklistedLogins + user.Id) ?? new List<string>();
+
+			var blacklisted = user.RefreshTokens.Where(x => x.Token != currentRefreshToken).Select(x => x.Token).ToList();
+
+			_userService.RevokeUserLoginsExceptCurrent(user, currentRefreshToken);
+
+			cacheValue.AddRange(blacklisted);
+
+			SetCache(CacheKeys.BlacklistedLogins + user.Id, cacheValue, new MemoryCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(20) });
 		}
 	}
 }

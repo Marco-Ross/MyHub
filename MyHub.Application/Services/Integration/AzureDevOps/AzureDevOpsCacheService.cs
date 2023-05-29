@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
-using MyHub.Domain.Integration.AzureDevOps.Interfaces;
-using MyHub.Domain.Integration.AzureDevOps.WorkItems;
+using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.Interfaces;
+using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.WorkItems;
 using MyHub.Infrastructure.Cache;
 using System.Reflection;
 using System.Text.Json.Nodes;
@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 
 namespace MyHub.Application.Services.Integration.AzureDevOps
 {
-	public class AzureDevOpsCacheService : IAzureDevOpsCacheService
+    public class AzureDevOpsCacheService : IAzureDevOpsCacheService
 	{
 		private readonly IMemoryCache _memoryCache;
 		private readonly IAzureDevOpsService _azureDevOpsService;

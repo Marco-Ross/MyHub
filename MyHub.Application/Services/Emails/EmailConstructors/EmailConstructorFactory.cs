@@ -20,6 +20,9 @@ namespace MyHub.Application.Services.Emails.EmailConstructors
 
 			if (typeof(T) == typeof(PasswordRecoveryEmail))
 				return _container.Resolve<PasswordEmailConstructor>();
+			
+			if (typeof(T) == typeof(EmailChangeEmail))
+				return _container.Resolve<ChangeEmailConstructor>();
 
 			else
 				return null;//default email

@@ -3,7 +3,8 @@ using Microsoft.Extensions.Options;
 using MyHub.Application.Services.Integration.AzureStorage;
 using MyHub.Domain.ConfigurationOptions.Storage;
 using MyHub.Domain.Enums.Enumerations;
-using MyHub.Domain.Integration.AzureDevOps.Interfaces;
+using MyHub.Domain.Integration.AzureDevOps.AzureStorage;
+using MyHub.Domain.Integration.AzureDevOps.AzureStorage.Interfaces;
 
 namespace MyHub.Application.Tests.Services.Integration.AzureStorage
 {
@@ -18,7 +19,7 @@ namespace MyHub.Application.Tests.Services.Integration.AzureStorage
 			_sut = new AzureStorageService(_storageOptions, _logger.Object);
 		}
 
-		[Fact(Skip = "Integration Test")]
+		[Fact(Skip = "Integration test")]
 		public async Task UploadFileToStorage_Upload_ReturnsTrue()
 		{
 			//Arrange
@@ -32,14 +33,16 @@ namespace MyHub.Application.Tests.Services.Integration.AzureStorage
 				fs.CopyTo(inMemoryCopy);
 			}
 
+			var options = new AzureStorageOptions { StorageFolder = StorageFolder.Test, FileName = "NewFile.png", OverWrite = true };
+
 			//Act
-			var uploaded = await _sut.UploadFileToStorage(StorageFolder.ProfileImages, inMemoryCopy, "NewFile.png");
+			var uploaded = await _sut.UploadFileToStorage(inMemoryCopy, options);
 
 			//Assert
 			Assert.True(uploaded);
 		}
-		
-		[Fact(Skip = "Integration Test")]
+
+		[Fact(Skip = "Integration test")]
 		public async Task GetWorkItems_HasCache_ReturnsCache()
 		{
 			//Arrange
@@ -53,8 +56,10 @@ namespace MyHub.Application.Tests.Services.Integration.AzureStorage
 				fs.CopyTo(inMemoryCopy);
 			}
 
+			var options = new AzureStorageOptions { StorageFolder = StorageFolder.Test, FileName = "NewFile.png", OverWrite = true };
+
 			//Act
-			var uploaded = await _sut.GetFileFromStorage(StorageFolder.ProfileImages, "NewFile.png");
+			var uploaded = await _sut.GetFileFromStorage(options);
 
 			//Assert
 			Assert.NotNull(uploaded);

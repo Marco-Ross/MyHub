@@ -1,12 +1,12 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MyHub.Domain.Integration.AzureDevOps.HubWorkItems;
-using MyHub.Domain.Integration.AzureDevOps.Interfaces;
+using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.HubWorkItems;
+using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.Interfaces;
 
 namespace MyHub.Api.Controllers
 {
-	[Authorize]
+    [Authorize]
 	[ApiController]
 	[Route("[controller]")]
 	public class AzureDevOpsController : BaseController

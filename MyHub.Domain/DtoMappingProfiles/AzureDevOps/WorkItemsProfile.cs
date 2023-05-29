@@ -1,10 +1,10 @@
 ﻿using AutoMapper;
-using MyHub.Domain.Integration.AzureDevOps.HubWorkItems;
-using MyHub.Domain.Integration.AzureDevOps.WorkItems;
+using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.HubWorkItems;
+using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.WorkItems;
 
 namespace MyHub.Domain.DtoMappingProfiles.AzureDevOps
 {
-	public class WorkItemsProfile : Profile
+    public class WorkItemsProfile : Profile
 	{
 		public WorkItemsProfile()
 		{
