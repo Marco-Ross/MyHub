@@ -17,13 +17,14 @@ using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Background.CleanBackground.Interfaces;
 using MyHub.Domain.Emails.Interfaces;
 using MyHub.Domain.Hubs.Interfaces;
-using MyHub.Domain.Integration.AzureDevOps.Interfaces;
+using MyHub.Domain.Integration.AzureDevOps.AzureStorage.Interfaces;
+using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.Interfaces;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Infrastructure.Repository.EntityFramework;
 
 namespace MyHub.Api.AutofacModules
 {
-	public class AppModule : Module
+    public class AppModule : Module
 	{
 		private readonly IConfiguration _configuration;
 		public AppModule(IConfiguration configuration)
@@ -45,6 +46,7 @@ namespace MyHub.Api.AutofacModules
 			builder.Register<IEmailConstructorFactory>(c => new EmailConstructorFactory(c.Resolve<IComponentContext>()));
 			builder.RegisterType<AccountRegisterEmailConstructor>();
 			builder.RegisterType<PasswordEmailConstructor>();
+			builder.RegisterType<ChangeEmailConstructor>();
 
 			builder.RegisterType<AuthenticationService>().As<IAuthenticationService>().InstancePerLifetimeScope();
 			builder.RegisterType<UserService>().As<IUsersService>().InstancePerLifetimeScope();

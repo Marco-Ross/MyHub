@@ -1,13 +1,13 @@
 ﻿using MyHub.Application.Services.Integration.AzureDevOps;
 using MyHub.Domain.ConfigurationOptions;
 using MyHub.Domain.ConfigurationOptions.Authentication;
-using MyHub.Domain.Integration.AzureDevOps.Interfaces;
+using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.Interfaces;
 using System.Net.Http.Headers;
 using System.Text;
 
 namespace MyHub.Api.AppExtensions
 {
-	public static class HttpClientExtensions
+    public static class HttpClientExtensions
 	{
 		public static void ConfigureHttpClients(this IServiceCollection serviceCollection, IConfiguration configuration)
 		{

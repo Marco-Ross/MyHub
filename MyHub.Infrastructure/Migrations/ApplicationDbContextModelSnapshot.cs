@@ -42,7 +42,7 @@ namespace MyHub.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens", (string)null);
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Emails.Email", b =>
@@ -83,7 +83,7 @@ namespace MyHub.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Emails", (string)null);
+                    b.ToTable("Emails");
 
                     b.UseTptMappingStrategy();
                 });
@@ -92,6 +92,17 @@ namespace MyHub.Infrastructure.Migrations
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ChangeEmailToken")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ChangeEmailTokenExpireDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ChangeEmailTokenSalt")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -136,15 +147,27 @@ namespace MyHub.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("TemporaryNewEmail")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
-                    b.ToTable("AccessingUsers", (string)null);
+                    b.ToTable("AccessingUsers");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Users.User", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Surname")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Theme")
                         .IsRequired()
@@ -156,21 +179,21 @@ namespace MyHub.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Emails.AccountRegisterEmail", b =>
                 {
                     b.HasBaseType("MyHub.Domain.Emails.Email");
 
-                    b.ToTable("AccountRegisterEmails", (string)null);
+                    b.ToTable("AccountRegisterEmails");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Emails.PasswordRecoveryEmail", b =>
                 {
                     b.HasBaseType("MyHub.Domain.Emails.Email");
 
-                    b.ToTable("PasswordRecoveryEmails", (string)null);
+                    b.ToTable("PasswordRecoveryEmails");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Authentication.RefreshToken", b =>

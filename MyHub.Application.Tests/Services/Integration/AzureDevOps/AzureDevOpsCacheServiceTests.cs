@@ -1,13 +1,13 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using MyHub.Application.Services.Integration.AzureDevOps;
-using MyHub.Domain.Integration.AzureDevOps.Interfaces;
-using MyHub.Domain.Integration.AzureDevOps.WorkItems;
+using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.Interfaces;
+using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.WorkItems;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace MyHub.Application.Tests.Services.Integration.AzureDevOps
 {
-	public class AzureDevOpsCacheServiceTests : ApplicationTestBase
+    public class AzureDevOpsCacheServiceTests : ApplicationTestBase
 	{
 		private readonly IAzureDevOpsCacheService _azureDevOpsCacheService;
 		private readonly Mock<IMemoryCache> _memoryCache = new();

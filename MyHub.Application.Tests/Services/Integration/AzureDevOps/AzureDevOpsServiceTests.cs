@@ -2,12 +2,12 @@
 using System.Text;
 using Moq.Protected;
 using System.Net;
-using MyHub.Domain.Integration.AzureDevOps.Interfaces;
 using System.Text.Json;
+using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.Interfaces;
 
 namespace MyHub.Application.Tests.Services.Integration.AzureDevOps
 {
-	public class AzureDevOpsServiceTests : ApplicationTestBase
+    public class AzureDevOpsServiceTests : ApplicationTestBase
 	{
 		private readonly IAzureDevOpsService _azureDevOpsService;
 		private readonly Mock<DelegatingHandler> _httpClientHandler = new();

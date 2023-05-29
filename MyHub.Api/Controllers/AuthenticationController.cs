@@ -76,6 +76,20 @@ namespace MyHub.Controllers
 			return Ok();
 		}
 
+		[HttpPost("ResetPasswordLoggedIn")]
+		public IActionResult ResetPasswordLoggedIn(ResetPasswordLoggedInDto resetPasswordDto)
+		{
+			if (!Request.Cookies.TryGetValue(AuthConstants.RefreshToken, out var refreshToken))
+				return BadRequest("Refresh Token not set");
+
+			var passwordResetValidation = _authenticationService.ResetPasswordLoggedIn(UserId, resetPasswordDto.OldPassword, resetPasswordDto.Password, refreshToken);
+
+			if (passwordResetValidation.IsInvalid)
+				return BadRequest(passwordResetValidation.ErrorsString);
+
+			return Ok();
+		}
+
 		[AllowAnonymous]
 		[HttpPost("ResetPassword")]
 		public async Task<IActionResult> ResetPassword(ResetPasswordDto resetPasswordDto)
@@ -113,13 +127,27 @@ namespace MyHub.Controllers
 
 			return Ok();
 		}
+		
+		[HttpPost("LoginToContinue")]
+		public IActionResult LoginToContinue(LoginUserDto userDto)
+		{
+			var accessToken = _authenticationService.AuthenticateUserGetTokens(UserId, userDto.Email, userDto.Password);
+
+			if (string.IsNullOrWhiteSpace(accessToken))
+				return BadRequest("Invalid Login");
+
+			return Ok(new { accessToken });
+		}
 
 		[AllowAnonymous]
 		[HttpPost("Refresh")]
 		public IActionResult Refresh()
 		{
 			if (!(Request.Cookies.TryGetValue(AuthConstants.AccessToken, out var accessToken) && Request.Cookies.TryGetValue(AuthConstants.RefreshToken, out var refreshToken)))
+			{
+				RemoveCookies();
 				return BadRequest("Access Token or Refresh Token not set");
+			}
 
 			var refreshValidation = _authenticationService.RefreshUserAuthentication(accessToken, refreshToken);
 
@@ -145,6 +173,41 @@ namespace MyHub.Controllers
 
 			if (!isUserRevoked)
 				return Forbid(JwtBearerDefaults.AuthenticationScheme);
+
+			RemoveCookies();
+
+			return Ok();
+		}
+
+		[HttpDelete()]
+		public async Task<IActionResult> DeleteUser()
+		{
+			await _authenticationService.DeleteUser(UserId);
+
+			RemoveCookies();
+
+			return Ok();
+		}
+
+		[HttpPost("ChangeEmail")]
+		public async Task<IActionResult> ChangeEmail(ChangeEmailDto changeEmailDto)
+		{
+			var changeEmailValidator = await _authenticationService.ChangeUserEmail(UserId, changeEmailDto.Email, changeEmailDto.AccessToken);
+
+			if (changeEmailValidator.IsInvalid)
+				return BadRequest(changeEmailValidator.ErrorsString);
+
+			return Ok();
+		}
+
+		[AllowAnonymous]
+		[HttpPost("ChangeEmail/Complete")]
+		public IActionResult ChangeEmailComplete(ChangeEmailCompleteDto changeEmailCompleteDto)
+		{
+			var changeEmailCompleteValidation = _authenticationService.ChangeUserEmailComplete(changeEmailCompleteDto.UserId, changeEmailCompleteDto.ChangeEmailToken);
+
+			if (changeEmailCompleteValidation.IsInvalid)
+				return BadRequest(changeEmailCompleteValidation.ErrorsString);
 
 			RemoveCookies();
 
