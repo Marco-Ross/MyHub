@@ -2,11 +2,15 @@ using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Owin.Logging;
 using MyHub.Api.Controllers;
+using MyHub.Application.BackgroundTasks;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.ConfigurationOptions.Authentication;
+using MyHub.Domain.Emails;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.UsersDto;
 using System.Text.Json;
@@ -22,13 +26,15 @@ namespace MyHub.Controllers
 		private readonly IMapper _mapper;
 		private readonly IAuthenticationService _authenticationService;
 		private readonly ICsrfEncryptionService _encryptionService;
+		private readonly ILogger<AuthenticationController> _logger;
 
-		public AuthenticationController(IOptions<AuthenticationOptions> authOptions, IMapper mapper, IAuthenticationService authenticationService, ICsrfEncryptionService encryptionService)
+		public AuthenticationController(IOptions<AuthenticationOptions> authOptions, IMapper mapper, IAuthenticationService authenticationService, ICsrfEncryptionService encryptionService, ILogger<AuthenticationController> logger)
 		{
 			_authOptions = authOptions.Value;
 			_authenticationService = authenticationService;
 			_encryptionService = encryptionService;
 			_mapper = mapper;
+			_logger = logger;
 		}
 
 		private void SetCookieDetails(LoginDetails loginTokens)
@@ -153,6 +159,8 @@ namespace MyHub.Controllers
 
 			if (refreshValidation.IsInvalid)
 			{
+				_logger.LogError("Failed to refresh token with error: {RefreshError}", refreshValidation.ErrorsString);
+
 				RemoveCookies();
 
 				return Forbid(JwtBearerDefaults.AuthenticationScheme);
