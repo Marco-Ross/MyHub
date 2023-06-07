@@ -9,6 +9,7 @@ using MyHub.Application.Services.Authentication;
 using MyHub.Application.Services.BackgroundServices;
 using MyHub.Application.Services.Emails;
 using MyHub.Application.Services.Emails.EmailConstructors;
+using MyHub.Application.Services.Images;
 using MyHub.Application.Services.Integration.AzureDevOps;
 using MyHub.Application.Services.Integration.AzureStorage;
 using MyHub.Application.Services.Users;
@@ -17,6 +18,7 @@ using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Background.CleanBackground.Interfaces;
 using MyHub.Domain.Emails.Interfaces;
 using MyHub.Domain.Hubs.Interfaces;
+using MyHub.Domain.Images.Interfaces;
 using MyHub.Domain.Integration.AzureDevOps.AzureStorage.Interfaces;
 using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.Interfaces;
 using MyHub.Domain.Users.Interfaces;
@@ -24,7 +26,7 @@ using MyHub.Infrastructure.Repository.EntityFramework;
 
 namespace MyHub.Api.AutofacModules
 {
-    public class AppModule : Module
+	public class AppModule : Module
 	{
 		private readonly IConfiguration _configuration;
 		public AppModule(IConfiguration configuration)
@@ -36,7 +38,10 @@ namespace MyHub.Api.AutofacModules
 			builder.Register(x =>
 			{
 				var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
-				optionsBuilder.UseSqlServer(_configuration.GetConnectionString("DefaultConnection"));
+				optionsBuilder.UseSqlServer(_configuration.GetConnectionString("DefaultConnection"), builder =>
+				{
+					builder.EnableRetryOnFailure(6, TimeSpan.FromSeconds(20), null);
+				});
 				return new ApplicationDbContext(optionsBuilder.Options);
 
 			}).InstancePerLifetimeScope();
@@ -60,6 +65,7 @@ namespace MyHub.Api.AutofacModules
 			builder.RegisterAssemblyTypes(typeof(IApplicationAssemblyMarker).Assembly).AsClosedTypesOf(typeof(IHubResolver<>)).InstancePerLifetimeScope();
 			builder.RegisterType<UserIdProvider>().As<IUserIdProvider>().SingleInstance();
 			builder.RegisterType<AzureStorageService>().As<IAzureStorageService>().SingleInstance();
+			builder.RegisterType<ImageQuantizationService>().As<IImageQuantizationService>().InstancePerLifetimeScope();
 
 			//CacheDecorators
 			builder.RegisterDecorator<AzureDevOpsCacheService, IAzureDevOpsService>();

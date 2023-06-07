@@ -18,7 +18,8 @@ namespace MyHub.Application.Services.Users
 		private readonly IEncryptionService _encryptionService;
 		private readonly IAzureStorageService _azureStorageService;
 
-		public UserService(ApplicationDbContext applicationDbContext, IEncryptionService encryptionService, IAzureStorageService azureStorageService)
+		public UserService(ApplicationDbContext applicationDbContext, IEncryptionService encryptionService,
+			IAzureStorageService azureStorageService)
 		{
 			_applicationDbContext = applicationDbContext;
 			_encryptionService = encryptionService;
