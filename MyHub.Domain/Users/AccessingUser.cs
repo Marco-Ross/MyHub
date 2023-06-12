@@ -5,9 +5,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace MyHub.Domain.Users
 {
 	public class AccessingUser
-    {
+	{
 		[Key, ForeignKey("User")]
-        public string Id { get; set; } = string.Empty;
+		public string Id { get; set; } = string.Empty;
 		public string Email { get; set; } = string.Empty;
 		public string Password { get; set; } = string.Empty;
 		public string PasswordSalt { get; set; } = string.Empty;
@@ -28,12 +28,15 @@ namespace MyHub.Domain.Users
 		public DateTime? ChangeEmailTokenExpireDate { get; set; } = null;
 
 		public DateTime? EmailVerificationDate { get; set; } = null;
-		
+
 		public bool IsEmailVerified { get; set; }
+		public string ThirdPartyAccessToken { get; set; } = string.Empty;
+		public string ThirdPartyIdToken { get; set; } = string.Empty;
 
 		public User User { get; set; } = new User();
 
 		[NotMapped]
 		public string ProfileImage { get; set; } = string.Empty;
+		public string ProfileImageUrl { get; set; } = string.Empty;
 	}
 }

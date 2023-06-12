@@ -2,17 +2,16 @@
 using Microsoft.AspNetCore.Mvc;
 using MyHub.Domain.Authentication;
 using Microsoft.IdentityModel.JsonWebTokens;
-using Microsoft.Extensions.Caching.Memory;
-using MyHub.Infrastructure.Cache;
+using MyHub.Domain.Users.Interfaces;
 
 namespace MyHub.Api.Filters
 {
 	public class LoggedInFilter : IActionFilter
 	{
-		private readonly IMemoryCache _memoryCache;
-		public LoggedInFilter(IMemoryCache memoryCache)
+		private readonly IUsersCacheService _usersCacheService;
+		public LoggedInFilter(IUsersCacheService usersCacheService)
 		{
-			_memoryCache = memoryCache;
+			_usersCacheService = usersCacheService;
 		}
 
 		public void OnActionExecuted(ActionExecutedContext context) { }
@@ -23,8 +22,9 @@ namespace MyHub.Api.Filters
 
 			if (hasRefreshCookie && !string.IsNullOrWhiteSpace(refreshToken))
 			{
-				if (IsBlacklisted(refreshToken, context))
+				if (_usersCacheService.IsUserBlacklisted(refreshToken, context.HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value))
 				{
+					context.HttpContext.Response.Cookies.Delete(AuthConstants.IdToken);
 					context.HttpContext.Response.Cookies.Delete(AuthConstants.AccessToken);
 					context.HttpContext.Response.Cookies.Delete(AuthConstants.RefreshToken);
 					context.HttpContext.Response.Cookies.Delete(AuthConstants.LoggedIn);
@@ -33,23 +33,6 @@ namespace MyHub.Api.Filters
 					context.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
 				}
 			}
-		}
-
-		private bool IsBlacklisted(string tokenId, ActionExecutingContext context)
-		{
-			var userId = context.HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
-
-			var cacheValue = GetCache<List<string>>(CacheKeys.BlacklistedLogins + userId) ?? new List<string>();
-
-			return cacheValue.Contains(tokenId);
-		}
-
-		private T? GetCache<T>(string key)
-		{
-			if (_memoryCache.TryGetValue<T>(key, out var cacheValue) && cacheValue is not null)
-				return cacheValue;
-
-			return cacheValue;
 		}
 	}
 }

@@ -28,6 +28,7 @@ namespace MyHub.Application.Services.Authentication
 
 				if (forgeryTokenDecrypt != forgeryCookieDecrypt)
 				{
+					context.HttpContext.Response.Cookies.Delete(AuthConstants.IdToken);
 					context.HttpContext.Response.Cookies.Delete(AuthConstants.AccessToken);
 					context.HttpContext.Response.Cookies.Delete(AuthConstants.RefreshToken);
 					context.HttpContext.Response.Cookies.Delete(AuthConstants.LoggedIn);

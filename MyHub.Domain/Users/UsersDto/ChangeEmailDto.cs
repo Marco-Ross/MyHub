@@ -7,6 +7,6 @@ namespace MyHub.Domain.Users.UsersDto
 		[Required]
 		public string Email { get; set; } = string.Empty;
 		[Required]
-		public string AccessToken { get; set; } = string.Empty;
+		public string IdToken { get; set; } = string.Empty;
 	}
 }
