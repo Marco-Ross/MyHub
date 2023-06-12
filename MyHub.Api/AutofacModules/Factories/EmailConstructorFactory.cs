@@ -1,8 +1,10 @@
 ﻿using Autofac;
+using MyHub.Application.Services.Emails;
+using MyHub.Application.Services.Emails.EmailConstructors;
 using MyHub.Domain.Emails;
 using MyHub.Domain.Emails.Interfaces;
 
-namespace MyHub.Application.Services.Emails.EmailConstructors
+namespace MyHub.Api.AutofacModules.Factories
 {
     public class EmailConstructorFactory : IEmailConstructorFactory
 	{

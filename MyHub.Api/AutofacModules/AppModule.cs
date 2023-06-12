@@ -2,6 +2,8 @@
 using AutoMapper.Contrib.Autofac.DependencyInjection;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using MyHub.Api.AutofacModules.Factories;
 using MyHub.Api.Filters;
 using MyHub.Application;
 using MyHub.Application.Hubs;
@@ -14,19 +16,22 @@ using MyHub.Application.Services.Integration.AzureDevOps;
 using MyHub.Application.Services.Integration.AzureStorage;
 using MyHub.Application.Services.Users;
 using MyHub.Domain;
+using MyHub.Domain.Authentication.Google;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Background.CleanBackground.Interfaces;
+using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.Emails.Interfaces;
 using MyHub.Domain.Hubs.Interfaces;
 using MyHub.Domain.Images.Interfaces;
 using MyHub.Domain.Integration.AzureDevOps.AzureStorage.Interfaces;
 using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.Interfaces;
+using MyHub.Domain.Users.Google;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Infrastructure.Repository.EntityFramework;
 
 namespace MyHub.Api.AutofacModules
 {
-	public class AppModule : Module
+    public class AppModule : Module
 	{
 		private readonly IConfiguration _configuration;
 		public AppModule(IConfiguration configuration)
@@ -53,8 +58,12 @@ namespace MyHub.Api.AutofacModules
 			builder.RegisterType<PasswordEmailConstructor>();
 			builder.RegisterType<ChangeEmailConstructor>();
 
+			builder.Register<ISharedAuthServiceFactory>(c => new SharedUsersServiceFactory(c.Resolve<IComponentContext>(), c.Resolve<IOptions<AuthenticationOptions>>()));
+			
+			builder.RegisterType<UsersService>().As<IUsersService>().InstancePerLifetimeScope();
+			builder.RegisterType<UsersCacheService>().As<IUsersCacheService>().InstancePerLifetimeScope();
+			builder.RegisterType<GoogleUsersService>().As<IGoogleUsersService>().InstancePerLifetimeScope();
 			builder.RegisterType<AuthenticationService>().As<IAuthenticationService>().InstancePerLifetimeScope();
-			builder.RegisterType<UserService>().As<IUsersService>().InstancePerLifetimeScope();
 			builder.RegisterType<CsrfEncryptionService>().As<ICsrfEncryptionService>().InstancePerLifetimeScope();
 			builder.RegisterType<EncryptionService>().As<IEncryptionService>().InstancePerLifetimeScope();
 			builder.RegisterType<EmailService>().As<IEmailService>().InstancePerLifetimeScope();
@@ -66,10 +75,10 @@ namespace MyHub.Api.AutofacModules
 			builder.RegisterType<UserIdProvider>().As<IUserIdProvider>().SingleInstance();
 			builder.RegisterType<AzureStorageService>().As<IAzureStorageService>().SingleInstance();
 			builder.RegisterType<ImageQuantizationService>().As<IImageQuantizationService>().InstancePerLifetimeScope();
+			builder.RegisterType<GoogleAuthenticationService>().As<IGoogleAuthenticationService>().InstancePerLifetimeScope();
 
 			//CacheDecorators
 			builder.RegisterDecorator<AzureDevOpsCacheService, IAzureDevOpsService>();
-			builder.RegisterDecorator<UsersCacheService, IUsersService>();
 		}
 	}
 }

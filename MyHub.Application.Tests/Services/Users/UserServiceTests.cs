@@ -16,6 +16,7 @@ namespace MyHub.Application.Tests.Services.Users
 		private readonly ApplicationDbContext _applicationDbContext = new(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(databaseName: "TestDb").Options);
 		private readonly Mock<IEncryptionService> _encryptionService = new();
 		private readonly Mock<IAzureStorageService> _azureStorageService = new();
+		private readonly Mock<IUsersCacheService> _usersCacheService = new();
 		private readonly AccessingUser USER;
 
 		public UserServiceTests()
@@ -24,7 +25,7 @@ namespace MyHub.Application.Tests.Services.Users
 			_applicationDbContext.Database.EnsureDeleted();
 
 			USER = new AccessingUser { Id = "TestUserId", Email = "Test@Email.com", User = new User { Id = "TestUserId", Username = "TestUser", Theme = "system-theme" }, Password = "TestPassword" };
-			_userService = new UserService(_applicationDbContext, _encryptionService.Object, _azureStorageService.Object);
+			_userService = new UsersService(_applicationDbContext, _encryptionService.Object, _azureStorageService.Object, _usersCacheService.Object);
 		}
 
 		[Fact]

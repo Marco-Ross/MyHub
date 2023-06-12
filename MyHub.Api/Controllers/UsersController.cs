@@ -1,9 +1,8 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using MyHub.Domain.Authentication;
-using MyHub.Domain.ConfigurationOptions.Authentication;
+using MyHub.Domain.Authentication.Google;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Domain.Users.UsersDto;
@@ -11,26 +10,26 @@ using System.Text.Json;
 
 namespace MyHub.Api.Controllers
 {
-	[Authorize]
+    [Authorize]
 	[ApiController]
 	[Route("[controller]")]
 	public class UsersController : BaseController
 	{
 		private readonly IMapper _mapper;
 		private readonly IUsersService _userService;
-		private readonly AuthenticationOptions _authOptions;
+		private readonly ISharedAuthServiceFactory _sharedAuthServiceFactory;
 
-		public UsersController(IUsersService userService, IMapper mapper, IOptions<AuthenticationOptions> authOptions)
+		public UsersController(IUsersService userService, ISharedAuthServiceFactory sharedAuthServiceFactory, IMapper mapper)
 		{
-			_authOptions = authOptions.Value;
 			_userService = userService;
-			_mapper = mapper;
+			_sharedAuthServiceFactory = sharedAuthServiceFactory;
+			_mapper = mapper;	
 		}
 
 		[HttpGet]
 		public IActionResult Get()
 		{
-			return Ok(_mapper.Map<AccountSettingsUserDto>(_userService.GetFullAccessingUserById(UserId)));
+			return Ok(_mapper.Map<AccountSettingsUserDto>(_sharedAuthServiceFactory.GetUsersService(LoginIssuer).GetFullAccessingUserById(UserId)));
 		}
 
 		[HttpPut]
@@ -78,7 +77,7 @@ namespace MyHub.Api.Controllers
 		[HttpGet("ProfileImage")]
 		public async Task<IActionResult> GetProfileImage()
 		{
-			var image = await _userService.GetUserProfileImage(UserId);
+			var image = await _sharedAuthServiceFactory.GetUsersService(LoginIssuer).GetUserProfileImage(UserId);
 
 			if (image is null)
 				return Ok();

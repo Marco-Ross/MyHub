@@ -2,6 +2,7 @@
 using FluentValidation;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using MyHub.Application.Helpers.JwtHelpers;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.ConfigurationOptions.Authentication;
@@ -144,7 +145,7 @@ namespace MyHub.Application.Services.Authentication
 			if (!authenticatingUser.IsEmailVerified)
 				return new Validator<LoginDetails>().AddError("Email address not verified.");
 
-			var tokens = GenerateAccessTokens(authenticatingUser);
+			var tokens = GenerateTokens(authenticatingUser);
 
 			_userService.AddRefreshToken(authenticatingUser, tokens.RefreshToken);
 
@@ -161,18 +162,18 @@ namespace MyHub.Application.Services.Authentication
 			if (!_encryptionService.VerifyData(password, authenticatingUser.Password, authenticatingUser.PasswordSalt))
 				return string.Empty;
 
-			return GenerateAccessTokens(authenticatingUser).AccessToken;
+			return GenerateTokens(authenticatingUser).IdToken;
 		}
 
-		public Validator<LoginDetails> RefreshUserAuthentication(string accessToken, string refreshToken)
+		public Validator<LoginDetails> RefreshUserAuthentication(string idToken, string refreshToken)
 		{
-			if (string.IsNullOrWhiteSpace(accessToken))
+			if (string.IsNullOrWhiteSpace(idToken))
 				return new Validator<LoginDetails>().AddError("Access Token is invalid.");
 
 			if (string.IsNullOrWhiteSpace(refreshToken))
 				return new Validator<LoginDetails>().AddError("Refresh Token is invalid.");
 
-			var principle = GetPrincipleFromToken(accessToken);
+			var principle = GetPrincipleFromToken(idToken);
 
 			if (principle is null)
 				return new Validator<LoginDetails>().AddError("Token has been invalidated.");
@@ -191,11 +192,11 @@ namespace MyHub.Application.Services.Authentication
 				return new Validator<LoginDetails>().AddError("Login has been invalidated.");
 			}
 
-			var newAccessTokens = GenerateAccessTokens(user);
+			var newTokens = GenerateTokens(user);
 
-			_userService.UpdateRefreshToken(user, refreshToken, newAccessTokens.RefreshToken);
+			_userService.UpdateRefreshToken(user, refreshToken, newTokens.RefreshToken);
 
-			return new Validator<LoginDetails>().Response(SetLoginDetails(newAccessTokens, user));
+			return new Validator<LoginDetails>().Response(SetLoginDetails(newTokens, user));
 		}
 
 		private LoginDetails SetLoginDetails(Tokens tokens, AccessingUser user)
@@ -203,7 +204,7 @@ namespace MyHub.Application.Services.Authentication
 
 		public bool RevokeUser(string userId, string refreshToken) => _userService.RevokeUser(userId, refreshToken) is not null;
 
-		private Tokens GenerateAccessTokens(AccessingUser user)
+		private Tokens GenerateTokens(AccessingUser user)
 		{
 			var tokenHandler = new JwtSecurityTokenHandler();
 			var tokenKey = Encoding.UTF8.GetBytes(_authOptions.JWT.Key);
@@ -211,21 +212,23 @@ namespace MyHub.Application.Services.Authentication
 			{
 				Audience = _authOptions.JWT.Audience,
 				Issuer = _authOptions.JWT.Issuer,
-				Subject = new ClaimsIdentity(new Claim[]
+				Subject = new ClaimsIdentity(ClaimsHelper.CreateClaims(new HubClaims
 				{
-					new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-					new Claim(JwtRegisteredClaimNames.Email, user.Email),
-					new Claim(JwtRegisteredClaimNames.Name, user.User.Username),
-					new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
-					new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-				}),
+					Sub = user.Id,
+					Email = user.Email,
+					Name = user.User.Username,
+					Iss = _authOptions.JWT.Issuer,
+					FamilyName = user.User.Surname,
+					GivenName = user.User.Name
+				})),
+
 				Expires = DateTime.UtcNow.AddMinutes(15),
 				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey), SecurityAlgorithms.HmacSha256Signature)
 			};
 
 			var token = tokenHandler.CreateToken(tokenDescriptor);
 
-			return new Tokens { AccessToken = tokenHandler.WriteToken(token), RefreshToken = _encryptionService.GenerateSecureToken() };
+			return new Tokens { IdToken = tokenHandler.WriteToken(token), RefreshToken = _encryptionService.GenerateSecureToken() };
 		}
 
 		private ClaimsPrincipal? GetPrincipleFromToken(string token)
@@ -296,9 +299,9 @@ namespace MyHub.Application.Services.Authentication
 			}
 		}
 
-		public async Task<Validator> ChangeUserEmail(string userId, string newEmail, string accessToken)
+		public async Task<Validator> ChangeUserEmail(string userId, string newEmail, string idToken)
 		{
-			var validToken = ValidateToken(accessToken);
+			var validToken = ValidateToken(idToken);
 
 			if (!validToken)
 				return new Validator().AddError("Invalid change email attempt.");

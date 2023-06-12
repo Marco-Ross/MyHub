@@ -12,18 +12,21 @@ using MyHub.Infrastructure.Repository.EntityFramework;
 
 namespace MyHub.Application.Services.Users
 {
-	public class UserService : IUsersService
+	public class UsersService : IUsersService
 	{
 		private readonly ApplicationDbContext _applicationDbContext;
 		private readonly IEncryptionService _encryptionService;
 		private readonly IAzureStorageService _azureStorageService;
+		private readonly IUsersCacheService _usersCacheService;
 
-		public UserService(ApplicationDbContext applicationDbContext, IEncryptionService encryptionService,
-			IAzureStorageService azureStorageService)
+		public UsersService(ApplicationDbContext applicationDbContext, IEncryptionService encryptionService,
+			IAzureStorageService azureStorageService, IUsersCacheService usersCacheService)
 		{
 			_applicationDbContext = applicationDbContext;
 			_encryptionService = encryptionService;
 			_azureStorageService = azureStorageService;
+			_usersCacheService = usersCacheService;
+			_usersCacheService = usersCacheService;
 		}
 
 		public AccessingUser RegisterUserDetails(AccessingUser newUser, string registerToken)
@@ -67,6 +70,18 @@ namespace MyHub.Application.Services.Users
 			return new Validator();
 		}
 
+		public AccessingUser RegisterThirdParty(AccessingUser newUser)
+		{
+			newUser.IsEmailVerified = true;
+			newUser.EmailVerificationDate = DateTime.Now;
+
+			var savedUser = _applicationDbContext.AccessingUsers.Add(newUser);
+
+			_applicationDbContext.SaveChanges();
+
+			return savedUser.Entity;
+		}
+		
 		public AccessingUser ResetUserPasswordLoggedIn(AccessingUser user, string newPassword)
 		{
 			user.Password = _encryptionService.HashData(newPassword, out var passwordSalt);
@@ -134,8 +149,13 @@ namespace MyHub.Application.Services.Users
 
 			return user;
 		}
-		
+
 		public void RevokeAllUserLogins(AccessingUser user)
+		{
+			_usersCacheService.RevokeAllUserLogins(user, PerformRevokeAllUserLogins);
+		}
+
+		private void PerformRevokeAllUserLogins(AccessingUser user)
 		{
 			if (user is null)
 				return;
@@ -144,12 +164,18 @@ namespace MyHub.Application.Services.Users
 
 			_applicationDbContext.SaveChanges();
 		}
+
 		public void RevokeUserLoginsExceptCurrent(AccessingUser user, string currentRefreshToken)
+		{
+			_usersCacheService.RevokeUserLoginsExceptCurrent(user, currentRefreshToken, PerformRevokeUserLoginsExceptCurrent);
+		}
+
+		private void PerformRevokeUserLoginsExceptCurrent(AccessingUser user, string currentRefreshToken)
 		{
 			if (user is null)
 				return;
 
-			user.RefreshTokens = user.RefreshTokens.Where(x=> x.Token == currentRefreshToken).ToList();
+			user.RefreshTokens = user.RefreshTokens.Where(x => x.Token == currentRefreshToken).ToList();
 
 			_applicationDbContext.SaveChanges();
 		}
@@ -200,10 +226,10 @@ namespace MyHub.Application.Services.Users
 			return await _azureStorageService.UploadFileToStorage(profileImage.ToMemoryStream(), GetProfileImageStorageOptions(userId));
 		}
 
-		public async Task<Stream?> GetUserProfileImage(string userId) 
+		public async Task<Stream?> GetUserProfileImage(string userId)
 			=> await _azureStorageService.GetFileFromStorage(GetProfileImageStorageOptions(userId));
 
-		public async Task<bool> DeleteUserProfileImage(string userId) 
+		public async Task<bool> DeleteUserProfileImage(string userId)
 			=> await _azureStorageService.RemoveFile(GetProfileImageStorageOptions(userId));
 
 		private static string GetUserProfileImageName(string userId) => $"{userId}.png";

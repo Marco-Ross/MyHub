@@ -2,13 +2,12 @@
 
 namespace MyHub.Domain.Users.Interfaces
 {
-    public interface IUsersService
-    {
+	public interface IUsersService : ISharedUsersService
+	{
 		AccessingUser RegisterUserDetails(AccessingUser newUser, string registerToken);
 		AccessingUser? RevokeUser(string userId, string refreshToken);
 		AccessingUser? RevokeUser(AccessingUser user, string refreshToken);
 		bool UserExists(string email);
-
 		AccessingUser? GetFullAccessingUserByEmail(string username);
 		AccessingUser? GetFullAccessingUserById(string id);
 		void AddRefreshToken(AccessingUser authenticatingUser, string refreshToken);
@@ -16,9 +15,8 @@ namespace MyHub.Domain.Users.Interfaces
 		Validator VerifyUserRegistration(AccessingUser user, string token);
 		AccessingUser ResetUserPassword(AccessingUser user, string resetToken);
 		Validator VerifyUserPasswordReset(AccessingUser user, string password, string resetPasswordToken);
-		Task<bool> UploadUserProfileImage(AccessingUser  user);
+		Task<bool> UploadUserProfileImage(AccessingUser user);
 		Task<bool> UpdateUserProfileImage(string userId, string image);
-		Task<Stream?> GetUserProfileImage(string userId);
 		void UpdateUserTheme(string userId, string theme);
 		string GetUserTheme(string userId);
 		void UpdateUserAccount(AccessingUser accessingUser, string userId);
@@ -29,5 +27,6 @@ namespace MyHub.Domain.Users.Interfaces
 		Validator ChangeUserEmailComplete(AccessingUser user, string changeEmailToken);
 		void RevokeUserLoginsExceptCurrent(AccessingUser user, string currentRefreshToken);
 		void RevokeAllUserLogins(AccessingUser user);
+		AccessingUser RegisterThirdParty(AccessingUser newUser);
 	}
 }
