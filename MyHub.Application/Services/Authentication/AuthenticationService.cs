@@ -2,6 +2,7 @@
 using FluentValidation;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using MyHub.Application.Helpers.JwtHelpers;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.ConfigurationOptions.Authentication;
@@ -66,6 +67,8 @@ namespace MyHub.Application.Services.Authentication
 			return new Validator();
 		}
 
+		public async Task DeleteUser(string userId) => await _userService.DeleteUser(userId);
+
 		public Validator VerifyUserEmail(string userId, string token)
 		{
 			var user = _userService.GetFullAccessingUserById(userId);
@@ -75,12 +78,32 @@ namespace MyHub.Application.Services.Authentication
 			return _userService.VerifyUserRegistration(user, token);
 		}
 
+		public Validator ResetPasswordLoggedIn(string userId, string oldPassword, string newPassword, string refreshToken)
+		{
+			var user = _userService.GetFullAccessingUserById(userId);
+
+			if (user is null)
+				return new Validator().AddError("User does not exist.");
+
+			if (!_encryptionService.VerifyData(oldPassword, user.Password, user.PasswordSalt))
+				return new Validator().AddError("Old password is invalid.");
+
+			_userService.RevokeUserLoginsExceptCurrent(user, refreshToken);
+
+			_userService.ResetUserPasswordLoggedIn(user, newPassword);
+
+			return new Validator();
+		}
+
 		public async Task<Validator> ResetPasswordEmail(string email)
 		{
 			var user = _userService.GetFullAccessingUserByEmail(email);
 
 			if (user is null)
 				return new Validator().AddError("Email address does not exist.");
+
+			if (!user.IsEmailVerified)
+				return new Validator().AddError("Email address not verified.");
 
 			if (user.ResetPasswordTokenExpireDate.HasValue && user.ResetPasswordTokenExpireDate > DateTime.Now)
 				return new Validator().AddError("A valid reset password link has already been sent.");
@@ -122,22 +145,35 @@ namespace MyHub.Application.Services.Authentication
 			if (!authenticatingUser.IsEmailVerified)
 				return new Validator<LoginDetails>().AddError("Email address not verified.");
 
-			var tokens = GenerateAccessTokens(authenticatingUser);
+			var tokens = GenerateTokens(authenticatingUser);
 
 			_userService.AddRefreshToken(authenticatingUser, tokens.RefreshToken);
 
 			return new Validator<LoginDetails>().Response(SetLoginDetails(tokens, authenticatingUser));
 		}
 
-		public Validator<LoginDetails> RefreshUserAuthentication(string accessToken, string refreshToken)
+		public string AuthenticateUserGetTokens(string userid, string email, string password)
 		{
-			if (string.IsNullOrWhiteSpace(accessToken))
+			var authenticatingUser = _userService.GetFullAccessingUserByEmail(email);
+
+			if (authenticatingUser is null || authenticatingUser?.Id != userid)
+				return string.Empty;
+
+			if (!_encryptionService.VerifyData(password, authenticatingUser.Password, authenticatingUser.PasswordSalt))
+				return string.Empty;
+
+			return GenerateTokens(authenticatingUser).IdToken;
+		}
+
+		public Validator<LoginDetails> RefreshUserAuthentication(string idToken, string refreshToken)
+		{
+			if (string.IsNullOrWhiteSpace(idToken))
 				return new Validator<LoginDetails>().AddError("Access Token is invalid.");
 
 			if (string.IsNullOrWhiteSpace(refreshToken))
 				return new Validator<LoginDetails>().AddError("Refresh Token is invalid.");
 
-			var principle = GetPrincipleFromToken(accessToken);
+			var principle = GetPrincipleFromToken(idToken);
 
 			if (principle is null)
 				return new Validator<LoginDetails>().AddError("Token has been invalidated.");
@@ -156,11 +192,11 @@ namespace MyHub.Application.Services.Authentication
 				return new Validator<LoginDetails>().AddError("Login has been invalidated.");
 			}
 
-			var newAccessTokens = GenerateAccessTokens(user);
+			var newTokens = GenerateTokens(user);
 
-			_userService.UpdateRefreshToken(user, refreshToken, newAccessTokens.RefreshToken);
+			_userService.UpdateRefreshToken(user, refreshToken, newTokens.RefreshToken);
 
-			return new Validator<LoginDetails>().Response(SetLoginDetails(newAccessTokens, user));
+			return new Validator<LoginDetails>().Response(SetLoginDetails(newTokens, user));
 		}
 
 		private LoginDetails SetLoginDetails(Tokens tokens, AccessingUser user)
@@ -168,7 +204,7 @@ namespace MyHub.Application.Services.Authentication
 
 		public bool RevokeUser(string userId, string refreshToken) => _userService.RevokeUser(userId, refreshToken) is not null;
 
-		private Tokens GenerateAccessTokens(AccessingUser user)
+		private Tokens GenerateTokens(AccessingUser user)
 		{
 			var tokenHandler = new JwtSecurityTokenHandler();
 			var tokenKey = Encoding.UTF8.GetBytes(_authOptions.JWT.Key);
@@ -176,37 +212,28 @@ namespace MyHub.Application.Services.Authentication
 			{
 				Audience = _authOptions.JWT.Audience,
 				Issuer = _authOptions.JWT.Issuer,
-				Subject = new ClaimsIdentity(new Claim[]
+				Subject = new ClaimsIdentity(ClaimsHelper.CreateClaims(new HubClaims
 				{
-					new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-					new Claim(JwtRegisteredClaimNames.Email, user.Email),
-					new Claim(JwtRegisteredClaimNames.Name, user.User.Username),
-					new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
-					new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-				}),
+					Sub = user.Id,
+					Email = user.Email,
+					Name = user.User.Username,
+					Iss = _authOptions.JWT.Issuer,
+					FamilyName = user.User.Surname,
+					GivenName = user.User.Name
+				})),
+
 				Expires = DateTime.UtcNow.AddMinutes(15),
 				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey), SecurityAlgorithms.HmacSha256Signature)
 			};
 
 			var token = tokenHandler.CreateToken(tokenDescriptor);
 
-			return new Tokens { AccessToken = tokenHandler.WriteToken(token), RefreshToken = _encryptionService.GenerateSecureToken() };
+			return new Tokens { IdToken = tokenHandler.WriteToken(token), RefreshToken = _encryptionService.GenerateSecureToken() };
 		}
 
 		private ClaimsPrincipal? GetPrincipleFromToken(string token)
 		{
-			var tokenKey = Encoding.UTF8.GetBytes(_authOptions.JWT.Key);
-
-			var tokenValidationParameters = new TokenValidationParameters
-			{
-				ValidateAudience = true,
-				ValidateIssuer = true,
-				ValidateIssuerSigningKey = true,
-				ValidateLifetime = false,
-				ValidAudience = _authOptions.JWT.Audience,
-				ValidIssuer = _authOptions.JWT.Issuer,
-				IssuerSigningKey = new SymmetricSecurityKey(tokenKey)
-			};
+			var tokenValidationParameters = GetValidationParametersNoLifetime();
 
 			var tokenHandler = new JwtSecurityTokenHandler();
 			try
@@ -222,6 +249,101 @@ namespace MyHub.Application.Services.Authentication
 			{
 				return null;
 			}
+		}
+
+		private TokenValidationParameters GetValidationParametersWithLifetime()
+		{
+			var validationParams = GetValidationParameters();
+
+			validationParams.ValidateLifetime = true;
+
+			return validationParams;
+		}
+
+		private TokenValidationParameters GetValidationParametersNoLifetime()
+		{
+			var validationParams = GetValidationParameters();
+
+			validationParams.ValidateLifetime = false;
+
+			return validationParams;
+		}
+
+		private TokenValidationParameters GetValidationParameters()
+		{
+			var tokenKey = Encoding.UTF8.GetBytes(_authOptions.JWT.Key);
+
+			return new TokenValidationParameters
+			{
+				ValidateAudience = true,
+				ValidateIssuer = true,
+				ValidateIssuerSigningKey = true,
+				ValidAudience = _authOptions.JWT.Audience,
+				ValidIssuer = _authOptions.JWT.Issuer,
+				IssuerSigningKey = new SymmetricSecurityKey(tokenKey)
+			};
+		}
+
+		private bool ValidateToken(string token)
+		{
+			var tokenHandler = new JwtSecurityTokenHandler();
+			var validationParameters = GetValidationParametersWithLifetime();
+			try
+			{
+				var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
+				return true;
+			}
+			catch (Exception ex)
+			{
+				return false;
+			}
+		}
+
+		public async Task<Validator> ChangeUserEmail(string userId, string newEmail, string idToken)
+		{
+			var validToken = ValidateToken(idToken);
+
+			if (!validToken)
+				return new Validator().AddError("Invalid change email attempt.");
+
+			if (_userService.UserExists(newEmail))
+				return new Validator().AddError("Email already exists.");
+
+			var user = _userService.GetFullAccessingUserById(userId);
+
+			if (user is null)
+				return new Validator().AddError("User does not exist.");
+
+			if (user.ChangeEmailTokenExpireDate.HasValue && user.ChangeEmailTokenExpireDate > DateTime.Now)
+				return new Validator().AddError("A valid reset email link has already been sent.");
+
+			var changeEmailToken = _encryptionService.GenerateSecureToken();
+
+			_userService.UpdateUserEmail(user, newEmail, changeEmailToken);
+
+			await _emailService.CreateAndSendEmail(new EmailChangeEmail
+			{
+				UserId = userId,
+				To = newEmail,
+				ToName = user.User.Username,
+				Subject = "Email Change Request",
+				PreviousEmail = user.Email,
+				ChangeEmailToken = changeEmailToken,
+				ClientDomainAddress = _domainOptions.Client
+			});
+
+			return new Validator();
+		}
+
+		public Validator ChangeUserEmailComplete(string userId, string changeEmailToken)
+		{
+			var user = _userService.GetFullAccessingUserById(userId);
+			if (user is null) return new Validator().AddError("Invalid user Id.");
+			if (string.IsNullOrWhiteSpace(changeEmailToken)) return new Validator().AddError("Invalid token.");
+
+			_userService.RevokeAllUserLogins(user);
+
+			return _userService.ChangeUserEmailComplete(user, changeEmailToken);
 		}
 	}
 }

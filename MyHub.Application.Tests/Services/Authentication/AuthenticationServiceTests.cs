@@ -31,7 +31,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 
 		public AuthenticationServiceTests()
 		{
-			USER = new AccessingUser { Id = "TestUserId", Email = "Test@Email.com", User = new User { Username = "TestUser" }, Password = "TestPassword" };
+			USER = new AccessingUser { Id = "TestUserId", Email = "Test@Email.com", User = new User { Username = "TestUser" }, Password = "TestPassword", PasswordSalt = "" };
 			_sut = new AuthenticationService(_domainOptions, _authenticationOptions, _userService.Object, _encryptionService.Object, _mapper.Object, _emailService.Object, _registerValidator.Object);
 		}
 
@@ -114,9 +114,23 @@ namespace MyHub.Application.Tests.Services.Authentication
 		}
 
 		[Fact]
+		public async Task ResetPasswordEmail_EmailNotValidated_ReturnsInvalid()
+		{
+			//Arrange
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(USER);
+
+			//Act
+			var validator = await _sut.ResetPasswordEmail(USER.Email);
+
+			//Assert
+			Assert.True(validator.IsInvalid);
+		}
+
+		[Fact]
 		public async Task ResetPasswordEmail_HasActiveResetPasswordTokenExpireDate_ReturnsInvalid()
 		{
 			//Arrange
+			USER.IsEmailVerified = true;
 			USER.ResetPasswordTokenExpireDate = DateTime.Now.AddHours(1);
 			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(USER);
 
@@ -128,9 +142,10 @@ namespace MyHub.Application.Tests.Services.Authentication
 		}
 
 		[Fact]
-		public async Task ResetPasswordEmail_HasExpiredResetPasswordTokenDate_ReturnsValid()
+		public async Task ResetPasswordEmail_HasExistingResetPasswordTokenDateAlreadyExpired_ReturnsValid()
 		{
 			//Arrange
+			USER.IsEmailVerified = true;
 			USER.ResetPasswordTokenExpireDate = DateTime.Now.AddHours(-1);
 			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(USER);
 
@@ -145,9 +160,10 @@ namespace MyHub.Application.Tests.Services.Authentication
 		}
 
 		[Fact]
-		public async Task ResetPasswordEmail_HasNoExpiredResetPasswordTokenDate_ReturnsValid()
+		public async Task ResetPasswordEmail_HasNoExistingResetPasswordTokenDate_ReturnsValid()
 		{
 			//Arrange
+			USER.IsEmailVerified = true;
 			USER.ResetPasswordTokenExpireDate = null;
 			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(USER);
 
@@ -364,6 +380,222 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Assert
 			Assert.True(validator.IsValid);
 			_userService.Verify(x => x.UpdateRefreshToken(It.IsAny<AccessingUser>(), It.IsAny<string>(), It.IsAny<string>()));
+		}
+		
+		[Fact]
+		public void ResetPasswordLoggedIn_InvalidUser_ReturnsInvalid()
+		{
+			//Arrange
+
+			//Act
+			var validator = _sut.ResetPasswordLoggedIn(string.Empty, string.Empty, string.Empty, string.Empty);
+
+			//Assert
+			Assert.True(validator.IsInvalid);
+		}
+		
+		[Fact]
+		public void ResetPasswordLoggedIn_InvalidOldPassword_ReturnsInvalid()
+		{
+			//Arrange
+			
+			_userService.Setup(x => x.GetFullAccessingUserById(USER.Id)).Returns(USER);
+
+			//Act
+			var validator = _sut.ResetPasswordLoggedIn(USER.Id, "InvalidOldPass", "NewPass", string.Empty);
+
+			//Assert
+			Assert.True(validator.IsInvalid);
+		}
+		
+		[Fact]
+		public void ResetPasswordLoggedIn_ValidOldPassword_ReturnsValid()
+		{
+			//Arrange
+			_encryptionService.Setup(x => x.VerifyData(USER.Password, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+			_userService.Setup(x => x.GetFullAccessingUserById(USER.Id)).Returns(USER);
+
+			//Act
+			var validator = _sut.ResetPasswordLoggedIn(USER.Id, USER.Password, "NewPass", string.Empty);
+
+			//Assert
+			Assert.True(validator.IsValid);
+		}
+
+		[Theory]
+		[InlineData("")]
+		[InlineData(" ")]
+		[InlineData(null)]
+		public void AuthenticateUserToContinue_InvalidEmail_ReturnsEmpty(string email)
+		{
+			//Arrange
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(() => null);
+
+			//Act
+			var token = _sut.AuthenticateUserGetTokens(USER.Id, email, USER.Password);
+
+			//Assert
+			Assert.Empty(token);
+		}
+		
+		[Fact]
+		public void AuthenticateUserToContinue_DifferentUserLogin_ReturnsEmpty()
+		{
+			//Arrange
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(It.IsAny<string>())).Returns(USER);
+
+			//Act
+			var token = _sut.AuthenticateUserGetTokens("DifferentUserId", "DifferentUserEmail", "DifferentUserPassword");
+
+			//Assert
+			Assert.Empty(token);
+		}
+		
+		[Fact]
+		public void AuthenticateUserToContinue_InvalidLogin_ReturnsEmpty()
+		{
+			//Arrange
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(It.IsAny<string>())).Returns(USER);
+			_encryptionService.Setup(x => x.VerifyData("InvalidPassword", It.IsAny<string>(), It.IsAny<string>())).Returns(false);
+
+			//Act
+			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.Email, "InvalidPassword");
+
+			//Assert
+			Assert.Empty(token);
+		}
+		
+		[Fact]
+		public void AuthenticateUserToContinue_ValidLogin_ReturnsToken()
+		{
+			//Arrange
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(It.IsAny<string>())).Returns(USER);
+			_encryptionService.Setup(x => x.VerifyData(USER.Password, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+
+			//Act
+			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.Email, USER.Password);
+
+			//Assert
+			Assert.NotEmpty(token);
+		}
+
+
+
+		[Theory]
+		[InlineData("")]
+		[InlineData(" ")]
+		[InlineData(null)]
+		public async Task ChangeUserEmail_InvalidToken_ReturnsInvalid(string email)
+		{
+			//Arrange
+
+			//Act
+			var changeEmailValidation = await _sut.ChangeUserEmail(USER.Id, email, "accessToken");
+
+			//Assert
+			Assert.True(changeEmailValidation.IsInvalid);
+		}
+
+		[Fact]
+		public async Task ChangeUserEmail_EmailExists_ReturnsInvalid()
+		{
+			//Arrange
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(It.IsAny<string>())).Returns(USER);
+			_encryptionService.Setup(x => x.VerifyData(USER.Password, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.Email, USER.Password);
+
+			_userService.Setup(x => x.UserExists("newEmail")).Returns(true);
+
+			//Act
+			var validator = await _sut.ChangeUserEmail(USER.Id, "newEmail", token);
+
+			//Assert
+			Assert.True(validator.IsInvalid);
+		}
+
+		[Fact]
+		public async Task ChangeUserEmail_InvalidUser_ReturnsInvalid()
+		{
+			//Arrange
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(It.IsAny<string>())).Returns(USER);
+			_encryptionService.Setup(x => x.VerifyData(USER.Password, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.Email, USER.Password);
+
+			_userService.Setup(x => x.GetFullAccessingUserById(It.IsAny<string>())).Returns(() => null);			
+
+			_userService.Setup(x => x.UserExists("newEmail")).Returns(false);
+
+			//Act
+			var validator = await _sut.ChangeUserEmail(USER.Id, "newEmail", token);
+
+			//Assert
+			Assert.True(validator.IsInvalid);
+		}
+
+		[Fact]
+		public async Task ChangeUserEmail_ChangeEmailAlreadySent_ReturnsInvalid()
+		{
+			//Arrange
+			USER.ChangeEmailTokenExpireDate = DateTime.Now.AddHours(1);
+
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(It.IsAny<string>())).Returns(USER);
+			_encryptionService.Setup(x => x.VerifyData(USER.Password, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.Email, USER.Password);
+
+
+			_userService.Setup(x => x.GetFullAccessingUserById(It.IsAny<string>())).Returns(USER);
+
+			_userService.Setup(x => x.UserExists("newEmail")).Returns(false);
+
+			//Act
+			var validator = await _sut.ChangeUserEmail(USER.Id, "newEmail", token);
+
+			//Assert
+			Assert.True(validator.IsInvalid);
+		}
+
+		[Fact]
+		public async Task ChangeUserEmail_HasNoExistingChangeEmailTokenDate_ReturnsValid()
+		{
+			//Arrange
+			USER.ChangeEmailTokenExpireDate = null;
+
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(It.IsAny<string>())).Returns(USER);
+			_encryptionService.Setup(x => x.VerifyData(USER.Password, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.Email, USER.Password);
+
+
+			_userService.Setup(x => x.GetFullAccessingUserById(It.IsAny<string>())).Returns(USER);
+
+			_userService.Setup(x => x.UserExists("newEmail")).Returns(false);
+
+			//Act
+			var validator = await _sut.ChangeUserEmail(USER.Id, "newEmail", token);
+
+			//Assert
+			Assert.True(validator.IsValid);
+		}
+		
+		[Fact]
+		public async Task ChangeUserEmail_HasExistingChangeEmailTokenDateAlreadyExpired_ReturnsValid()
+		{
+			//Arrange
+			USER.ChangeEmailTokenExpireDate = DateTime.Now.AddHours(-1);
+
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(It.IsAny<string>())).Returns(USER);
+			_encryptionService.Setup(x => x.VerifyData(USER.Password, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.Email, USER.Password);
+
+
+			_userService.Setup(x => x.GetFullAccessingUserById(It.IsAny<string>())).Returns(USER);
+
+			_userService.Setup(x => x.UserExists("newEmail")).Returns(false);
+
+			//Act
+			var validator = await _sut.ChangeUserEmail(USER.Id, "newEmail", token);
+
+			//Assert
+			Assert.True(validator.IsValid);
 		}
 	}
 }

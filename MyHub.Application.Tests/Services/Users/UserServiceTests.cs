@@ -2,19 +2,21 @@
 using MyHub.Application.Services.Users;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
-using MyHub.Domain.Integration.AzureDevOps.Interfaces;
+using MyHub.Domain.Integration.AzureDevOps.AzureStorage.Interfaces;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Infrastructure.Repository.EntityFramework;
 
 namespace MyHub.Application.Tests.Services.Users
 {
+	[Collection("Sequential")]
 	public class UserServiceTests : ApplicationTestBase
 	{
 		private readonly IUsersService _userService;
 		private readonly ApplicationDbContext _applicationDbContext = new(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(databaseName: "TestDb").Options);
 		private readonly Mock<IEncryptionService> _encryptionService = new();
 		private readonly Mock<IAzureStorageService> _azureStorageService = new();
+		private readonly Mock<IUsersCacheService> _usersCacheService = new();
 		private readonly AccessingUser USER;
 
 		public UserServiceTests()
@@ -22,8 +24,8 @@ namespace MyHub.Application.Tests.Services.Users
 			_baseApplicationDbContext = _applicationDbContext;
 			_applicationDbContext.Database.EnsureDeleted();
 
-			USER = new AccessingUser { Id = "TestUserId", Email = "Test@Email.com", User = new User { Username = "TestUser" }, Password = "TestPassword" };
-			_userService = new UserService(_applicationDbContext, _encryptionService.Object, _azureStorageService.Object);
+			USER = new AccessingUser { Id = "TestUserId", Email = "Test@Email.com", User = new User { Id = "TestUserId", Username = "TestUser", Theme = "system-theme" }, Password = "TestPassword" };
+			_userService = new UsersService(_applicationDbContext, _encryptionService.Object, _azureStorageService.Object, _usersCacheService.Object);
 		}
 
 		[Fact]
@@ -251,6 +253,178 @@ namespace MyHub.Application.Tests.Services.Users
 
 			//Assert
 			Assert.False(_applicationDbContext.AccessingUsers.Find(accessingUser.Id)?.RefreshTokens.Any());
+		}
+
+		[Fact]
+		public void UpdateUserTheme_UserDoesNotExist_NotSaved()
+		{
+			//Assign
+
+			//Act
+			_userService.UpdateUserTheme(string.Empty, USER.User.Theme);
+
+			//Assert
+			Assert.Null(_applicationDbContext.Users.Find(USER.Id)?.Theme);
+		}
+
+		[Fact]
+		public void UpdateUserTheme_UserExists_Saved()
+		{
+			//Assign
+			AddToDatabase(USER.User);
+
+			//Act
+			_userService.UpdateUserTheme(USER.Id, USER.User.Theme);
+
+			//Assert
+			Assert.NotNull(_applicationDbContext.Users.Find(USER.Id)?.Theme);
+		}
+
+		[Theory]
+		[InlineData("")]
+		[InlineData(" ")]
+		[InlineData(null)]
+		public void GetUserTheme_NoUserId_ReturnsEmpty(string theme)
+		{
+			//Assign
+
+			//Act
+			_userService.GetUserTheme(theme);
+
+			//Assert
+			Assert.Null(_applicationDbContext.Users.Find(USER.Id)?.Theme);
+		}
+
+		[Fact]
+		public void GetUserTheme_UserId_ReturnsTheme()
+		{
+			//Assign
+			AddToDatabase(USER.User);
+
+			//Act
+			var loadedTheme = _userService.GetUserTheme(USER.Id);
+
+			//Assert
+			Assert.Equal(USER.User.Theme, loadedTheme);
+		}
+
+		[Fact]
+		public void UpdateUserAccount_UserId_ReturnsTheme()
+		{
+			//Assign
+			AddToDatabase(USER);
+
+			var newUserDetails = new AccessingUser { User = new User { Username = "newUsername", Name = "newName", Surname = "newSurname" } };
+
+			//Act
+			_userService.UpdateUserAccount(newUserDetails, USER.Id);
+
+			//Assert
+			Assert.Equal(newUserDetails.User.Username, _applicationDbContext.AccessingUsers.Find(USER.Id)?.User.Username);
+			Assert.Equal(newUserDetails.User.Name, _applicationDbContext.AccessingUsers.Find(USER.Id)?.User.Name);
+			Assert.Equal(newUserDetails.User.Surname, _applicationDbContext.AccessingUsers.Find(USER.Id)?.User.Surname);
+		}
+
+		[Fact]
+		public void ChangeUserEmailComplete_InvalidChangeEmailToken_ReturnsError()
+		{
+			//Assign
+			var accessingUser = new AccessingUser();
+
+			//Act
+			var verifyUserEmailChange = _userService.ChangeUserEmailComplete(accessingUser, string.Empty);
+
+			//Assert
+			Assert.True(verifyUserEmailChange.IsInvalid);
+		}
+
+		[Fact]
+		public void ChangeUserEmailComplete_ChangeEmailTokensNotMatching_ReturnsError()
+		{
+			//Assign
+			var accessingUser = new AccessingUser { ChangeEmailToken = "TestEmailChangeToken", ChangeEmailTokenSalt = "TestEmailChangeTokenSalt" };
+			_encryptionService.Setup(x => x.VerifyData(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(false);
+
+			//Act
+			var verifyUserEmailChange = _userService.ChangeUserEmailComplete(accessingUser, "InvalidEmailChangeToken");
+
+			//Assert
+			Assert.True(verifyUserEmailChange.IsInvalid);
+		}
+
+		[Fact]
+		public void ChangeUserEmailComplete_NullEmailChangeTokenExpireDate_ReturnsError()
+		{
+			//Assign
+			var accessingUser = new AccessingUser { ChangeEmailToken = "TestEmailChangeToken", ChangeEmailTokenSalt = "TestEmailChangeTokenSalt", ChangeEmailTokenExpireDate = null };
+			_encryptionService.Setup(x => x.VerifyData(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+
+			//Act
+			var verifyUserEmailChange = _userService.ChangeUserEmailComplete(accessingUser, "TestEmailChangeToken");
+
+			//Assert
+			Assert.True(verifyUserEmailChange.IsInvalid);
+		}
+
+		[Fact]
+		public void ChangeUserEmailComplete_ExpiredEmailChangeTokenExpireDate_ReturnsError()
+		{
+			//Assign
+			var accessingUser = new AccessingUser { ChangeEmailToken = "TestEmailChangeToken", ChangeEmailTokenSalt = "TestEmailChangeTokenSalt", ChangeEmailTokenExpireDate = DateTime.Now.AddHours(-1) };
+			_encryptionService.Setup(x => x.VerifyData(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+
+			//Act
+			var verifyUserEmailChange = _userService.ChangeUserEmailComplete(accessingUser, "TestEmailChangeToken");
+
+			//Assert
+			Assert.True(verifyUserEmailChange.IsInvalid);
+		}
+
+		[Fact]
+		public void ChangeUserEmailComplete_ValidData_ReturnsValid()
+		{
+			//Assign
+			var accessingUser = new AccessingUser { User = new User { Id = "TestUserId" }, ChangeEmailToken = "TestEmailChangeToken", ChangeEmailTokenSalt = "TestEmailChangeTokenSalt", ChangeEmailTokenExpireDate = DateTime.Now.AddHours(1) };
+			AddToDatabase(accessingUser);
+
+			_encryptionService.Setup(x => x.VerifyData(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+
+			//Act
+			var verifyUserEmailChange = _userService.ChangeUserEmailComplete(accessingUser, "TestEmailChangeToken");
+
+			//Assert
+			Assert.True(verifyUserEmailChange.IsValid);
+			Assert.Equal(_applicationDbContext.AccessingUsers.Find("TestUserId")?.ChangeEmailToken, string.Empty);
+			Assert.Null(_applicationDbContext.AccessingUsers.Find("TestUserId")?.ChangeEmailTokenExpireDate);
+		}
+
+		[Theory]
+		[InlineData("")]
+		[InlineData(" ")]
+		[InlineData(null)]
+		public void DeleteUser_InvalidUserId_NotRemoved(string userId)
+		{
+			//Assign
+			AddToDatabase(USER.User);
+
+			//Act
+			_userService.DeleteUser(userId);
+
+			//Assert
+			Assert.NotNull(_applicationDbContext.Users.Find(USER.User.Id));
+		}
+
+		[Fact]
+		public void DeleteUser_ValidUserId_Removed()
+		{
+			//Assign
+			AddToDatabase(USER.User);
+
+			//Act
+			_userService.DeleteUser(USER.User.Id);
+
+			//Assert
+			Assert.Null(_applicationDbContext.Users.Find(USER.User.Id));
 		}
 	}
 }

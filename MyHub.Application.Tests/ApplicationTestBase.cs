@@ -24,12 +24,20 @@ namespace MyHub.Application.Tests
 
 		protected static StorageOptions GetStorageOptions()
 		{
-			return new StorageOptions { AccountName = "marcoshubstorage", ImageContainer= "marcohubcontainer", AccountKey = "" };
+			return new StorageOptions
+			{
+				AccountName = "marcoshubstorage",
+				ImageContainer = "marcohubcontainer",
+				BaseFolder = "test/",
+				BaseUrl = "https://marcoshubstorage.blob.core.windows.net/marcohubcontainer/",
+				AccountKey = ""
+			};
 		}
-		
+
 		protected static AuthenticationOptions GetAuthOptions()
 		{
-			return new AuthenticationOptions {
+			return new AuthenticationOptions
+			{
 				JWT = new Jwt
 				{
 					Key = "586E3272357538782F413F4428472B4B",
@@ -50,7 +58,7 @@ namespace MyHub.Application.Tests
 			validationResult.Errors.Add(new ValidationFailure(propertyName, error));
 			return validationResult;
 		}
-		
+
 		protected void AddToDatabase<T>(T entity)
 		{
 			if (entity == null) return;

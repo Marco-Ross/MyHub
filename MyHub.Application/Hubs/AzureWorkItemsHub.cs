@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using MyHub.Domain.Hubs.Interfaces;
-using MyHub.Domain.Integration.AzureDevOps.WebHooks;
+using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.WebHooks;
 
 namespace MyHub.Application.Hubs
 {
-	public class AzureWorkItemsHub : Hub, IHubResolver<UpdatedWorkItemEventDto>
+    public class AzureWorkItemsHub : Hub, IHubResolver<UpdatedWorkItemEventDto>
 	{
 		private readonly IHubContext<AzureWorkItemsHub> _hub;
 		public AzureWorkItemsHub(IHubContext<AzureWorkItemsHub> hubContext)

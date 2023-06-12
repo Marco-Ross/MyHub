@@ -1,13 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MyHub.Api.Filters;
 using MyHub.Domain.Hubs.Interfaces;
-using MyHub.Domain.Integration.AzureDevOps.Interfaces;
-using MyHub.Domain.Integration.AzureDevOps.WebHooks;
+using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.Interfaces;
+using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.WebHooks;
 
 namespace MyHub.Api.Controllers
 {
-	//Use NgRok Ip as webhook server to localhost.
-	[ApiController]
+    //Use NgRok Ip as webhook server to localhost.
+    [ApiController]
 	[ServiceFilter(typeof(ApiKeyAuthFilter))]
 	[Route("[controller]")]
 	public class AzureDevOpsWebHooksController : BaseController

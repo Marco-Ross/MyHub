@@ -21,13 +21,15 @@ using MyHub.Domain.ConfigurationOptions;
 using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.ConfigurationOptions.CorsOriginOptions;
 using MyHub.Domain.ConfigurationOptions.Storage;
-using MyHub.Domain.Enums.Enumerations;
 using MyHub.Domain.Exceptions;
 using MyHub.Domain.RateLimiterOptions;
 using MyHub.Infrastructure.Repository.EntityFramework;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Threading.RateLimiting;
+using Google.Apis.Auth;
+using System.Security.Claims;
+using MyHub.Application.Helpers.JwtHelpers;
 
 const string AllowedCorsOrigins = "_corsOrigins";
 const string SlidingPolicy = "sliding";
@@ -76,17 +78,8 @@ builder.Services.AddAuthentication(options =>
 	options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 }).AddJwtBearer(options =>
 {
-	//Replace the token header with token in cookie. (Used to Safely store the jwt on client).
-	options.Events = new JwtBearerEvents
-	{
-		OnMessageReceived = context =>
-		{
-			context.Token = context.Request.Cookies[AuthConstants.AccessToken];
-			return Task.CompletedTask;
-		}
-	};
-
 	options.SaveToken = true;
+
 	options.TokenValidationParameters = new TokenValidationParameters
 	{
 		ValidateIssuer = true,
@@ -98,11 +91,68 @@ builder.Services.AddAuthentication(options =>
 		IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection(ConfigSections.Authentication).Get<AuthenticationOptions>()?.JWT.Key ?? string.Empty)),
 		ClockSkew = TimeSpan.Zero
 	};
+
+	options.Events = new JwtBearerEvents
+	{
+		OnMessageReceived = context =>
+		{
+			var idToken = context.Request.Cookies[AuthConstants.IdToken];
+
+			if (idToken is null)
+				return Task.CompletedTask;
+
+			var handler = new JwtSecurityTokenHandler();
+			var token = handler.ReadJwtToken(idToken);
+
+			//Replace the token header with token in cookie. (Used to Safely store the jwt on client).
+			context.Token = idToken;
+
+			if (token.Issuer == builder.Configuration.GetSection(ConfigSections.Authentication).Get<AuthenticationOptions>()?.JWT.Issuer)
+				return Task.CompletedTask;
+
+			else if (token.Issuer == builder.Configuration.GetSection(ConfigSections.Authentication).Get<AuthenticationOptions>()?.ThirdPartyLogin.Google.Issuer)
+			{
+				var expirationUnixTimeSeconds = token.ValidTo;
+				var currentUnixTimeSeconds = DateTime.UtcNow;
+
+				if (currentUnixTimeSeconds >= expirationUnixTimeSeconds)
+				{
+					context.Fail("Unauthorized");
+					return Task.CompletedTask;
+				}
+
+				var audience = new List<string> { builder.Configuration.GetSection(ConfigSections.Authentication).Get<AuthenticationOptions>()?.ThirdPartyLogin.Google.Audience ?? string.Empty };
+				var payload = GoogleJsonWebSignature.ValidateAsync(idToken, new GoogleJsonWebSignature.ValidationSettings { Audience = audience }).Result;
+
+				if (payload != null)
+				{
+					var claims = ClaimsHelper.CreateClaims(new HubClaims
+					{
+						Sub = payload.Subject,
+						Email = payload.Email,
+						Name = payload.Name,
+						Iss = payload.Issuer,
+						FamilyName = payload.FamilyName,
+						GivenName = payload.GivenName,
+						Pic = payload.Picture
+					});
+
+					context.Principal = new ClaimsPrincipal(new ClaimsIdentity(claims, JwtBearerDefaults.AuthenticationScheme));
+
+					context.Success();
+					return Task.CompletedTask;
+				}
+			}
+
+			context.Fail("Unauthorized");
+			return Task.CompletedTask;
+		}
+	};
 });
+
 //So that the JWT does not map to Microsofts default claims.
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
-
 
 //builder.Services.AddResponseCaching; //has to be after AddCors
 builder.Services.AddAuthorization();
@@ -110,6 +160,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers(config =>
 {
 	config.Filters.Add(typeof(CsrfFilter)); //Used on all controllers
+	config.Filters.Add(typeof(LoggedInFilter)); //Used on all controllers
 });
 
 builder.Services.AddScoped<ApiKeyAuthFilter>(); //Added by serviceFilter attribute

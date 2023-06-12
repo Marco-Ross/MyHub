@@ -1,45 +1,63 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyHub.Domain.Authentication;
+using MyHub.Domain.Authentication.Google;
+using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Domain.Users.UsersDto;
+using System.Text.Json;
 
 namespace MyHub.Api.Controllers
 {
-	[Authorize]
+    [Authorize]
 	[ApiController]
 	[Route("[controller]")]
 	public class UsersController : BaseController
 	{
 		private readonly IMapper _mapper;
 		private readonly IUsersService _userService;
+		private readonly ISharedAuthServiceFactory _sharedAuthServiceFactory;
 
-		public UsersController(IUsersService userService, IMapper mapper)
+		public UsersController(IUsersService userService, ISharedAuthServiceFactory sharedAuthServiceFactory, IMapper mapper)
 		{
 			_userService = userService;
-			_mapper = mapper;
+			_sharedAuthServiceFactory = sharedAuthServiceFactory;
+			_mapper = mapper;	
 		}
 
 		[HttpGet]
-		public IEnumerable<string> Get()
+		public IActionResult Get()
 		{
-			return new string[] { "value1", "value2" };
+			return Ok(_mapper.Map<AccountSettingsUserDto>(_sharedAuthServiceFactory.GetUsersService(LoginIssuer).GetFullAccessingUserById(UserId)));
 		}
 
-		[HttpGet("{id}")]
-		public string Get(int id)
+		[HttpPut]
+		public IActionResult Put(AccountSettingsUserUpdateDto accountSettingsUserDto)
 		{
-			return "value";
+			_userService.UpdateUserAccount(_mapper.Map<AccessingUser>(accountSettingsUserDto), UserId);
+
+			var existingCookie = Request.Cookies[AuthConstants.LoggedIn];
+
+			if (existingCookie is null)
+				return Ok();
+
+			var loginCookie = JsonSerializer.Deserialize<HubUserDto>(existingCookie);
+
+			if (loginCookie is null)
+				return Ok();
+
+			loginCookie.Username = accountSettingsUserDto.Username;
+
+			Response.Cookies.Append(AuthConstants.LoggedIn, JsonSerializer.Serialize(loginCookie));
+
+			return Ok();
 		}
 
-		[HttpPut("{id}")]
-		public void Put(int id, [FromBody] string value)
+		[HttpDelete()]
+		public IActionResult Delete()
 		{
-		}
-
-		[HttpDelete("{id}")]
-		public void Delete(int id)
-		{
+			return Ok();
 		}
 
 		[HttpPut("Theme")]
@@ -59,12 +77,34 @@ namespace MyHub.Api.Controllers
 		[HttpGet("ProfileImage")]
 		public async Task<IActionResult> GetProfileImage()
 		{
-			var image = await _userService.GetUserProfileImage(UserId);
+			var image = await _sharedAuthServiceFactory.GetUsersService(LoginIssuer).GetUserProfileImage(UserId);
 
 			if (image is null)
 				return Ok();
 
 			return File(image, "image/png");
+		}
+		
+		[HttpPut("ProfileImage")]
+		public async Task<IActionResult> UpdateProfileImage(ProfileImageDto imageDto)
+		{
+			var imageUploaded = await _userService.UpdateUserProfileImage(UserId, imageDto.Image);
+
+			if (!imageUploaded)
+				return BadRequest("Unable to upload image.");
+
+			return Ok();
+		}
+
+		[HttpDelete("ProfileImage")]
+		public async Task<IActionResult> DeleteProfileImage()
+		{
+			var imageDeleted = await _userService.DeleteUserProfileImage(UserId);
+
+			if (!imageDeleted)
+				return BadRequest("Unable to remove image.");
+
+			return Ok();
 		}
 	}
 }

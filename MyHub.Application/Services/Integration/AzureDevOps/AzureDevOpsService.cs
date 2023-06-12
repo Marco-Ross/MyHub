@@ -1,11 +1,11 @@
-﻿using MyHub.Domain.Integration.AzureDevOps.Interfaces;
-using MyHub.Domain.Integration.AzureDevOps.WorkItems;
+﻿using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.Interfaces;
+using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.WorkItems;
 using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace MyHub.Application.Services.Integration.AzureDevOps
 {
-	public class AzureDevOpsService : IAzureDevOpsService
+    public class AzureDevOpsService : IAzureDevOpsService
 	{
 		private readonly HttpClient _httpClient;
 

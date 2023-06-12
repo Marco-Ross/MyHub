@@ -7,5 +7,6 @@
         public AuthEmailSenderOptions AuthEmailSenderOptions { get; set; } = new AuthEmailSenderOptions();
         public Pat PAT { get; set; } = new Pat();
         public string ApiKey { get; set; } = string.Empty;
+        public ThirdPartyLogin ThirdPartyLogin { get; set; } = new ThirdPartyLogin();
     }
 }
