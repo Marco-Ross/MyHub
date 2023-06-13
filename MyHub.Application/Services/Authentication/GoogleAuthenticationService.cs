@@ -89,7 +89,8 @@ namespace MyHub.Application.Services.Authentication
 					ClientId = _authOptions.ThirdPartyLogin.Google.ClientId,
 					ClientSecret = _authOptions.ThirdPartyLogin.Google.ClientSecret
 				},
-				Scopes = new[] { "profile", "email", "openid" }
+				Scopes = new[] { "profile", "email", "openid" },
+				Prompt = "consent"
 			});
 
 			var tokenResponse = await flow.ExchangeCodeForTokenAsync(authUser, authCode, _authOptions.ThirdPartyLogin.Google.RedirectUri, CancellationToken.None);
