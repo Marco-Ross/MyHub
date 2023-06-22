@@ -1,8 +1,7 @@
-﻿using MyHub.Domain.Users.Interfaces;
-
-namespace MyHub.Domain.Users.Google
+﻿namespace MyHub.Domain.Users.Google
 {
-    public interface IGoogleUsersService : ISharedUsersService
+	public interface IGoogleUsersService
     {
-    }
+		Task<Stream?> GetUserProfileImage(string pictureUrl);
+	}
 }

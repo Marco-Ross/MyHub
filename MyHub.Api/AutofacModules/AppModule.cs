@@ -2,7 +2,6 @@
 using AutoMapper.Contrib.Autofac.DependencyInjection;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using MyHub.Api.AutofacModules.Factories;
 using MyHub.Api.Filters;
 using MyHub.Application;
@@ -16,10 +15,10 @@ using MyHub.Application.Services.Integration.AzureDevOps;
 using MyHub.Application.Services.Integration.AzureStorage;
 using MyHub.Application.Services.Users;
 using MyHub.Domain;
+using MyHub.Domain.Authentication.Facebook;
 using MyHub.Domain.Authentication.Google;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Background.CleanBackground.Interfaces;
-using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.Emails.Interfaces;
 using MyHub.Domain.Hubs.Interfaces;
 using MyHub.Domain.Images.Interfaces;
@@ -31,7 +30,7 @@ using MyHub.Infrastructure.Repository.EntityFramework;
 
 namespace MyHub.Api.AutofacModules
 {
-    public class AppModule : Module
+	public class AppModule : Module
 	{
 		private readonly IConfiguration _configuration;
 		public AppModule(IConfiguration configuration)
@@ -45,7 +44,7 @@ namespace MyHub.Api.AutofacModules
 				var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
 				optionsBuilder.UseSqlServer(_configuration.GetConnectionString("DefaultConnection"), builder =>
 				{
-					builder.EnableRetryOnFailure(6, TimeSpan.FromSeconds(20), null);
+					builder.EnableRetryOnFailure(10, TimeSpan.FromSeconds(20), null);
 				});
 				return new ApplicationDbContext(optionsBuilder.Options);
 
@@ -57,8 +56,6 @@ namespace MyHub.Api.AutofacModules
 			builder.RegisterType<AccountRegisterEmailConstructor>();
 			builder.RegisterType<PasswordEmailConstructor>();
 			builder.RegisterType<ChangeEmailConstructor>();
-
-			builder.Register<ISharedAuthServiceFactory>(c => new SharedUsersServiceFactory(c.Resolve<IComponentContext>(), c.Resolve<IOptions<AuthenticationOptions>>()));
 			
 			builder.RegisterType<UsersService>().As<IUsersService>().InstancePerLifetimeScope();
 			builder.RegisterType<UsersCacheService>().As<IUsersCacheService>().InstancePerLifetimeScope();
@@ -76,6 +73,7 @@ namespace MyHub.Api.AutofacModules
 			builder.RegisterType<AzureStorageService>().As<IAzureStorageService>().SingleInstance();
 			builder.RegisterType<ImageQuantizationService>().As<IImageQuantizationService>().InstancePerLifetimeScope();
 			builder.RegisterType<GoogleAuthenticationService>().As<IGoogleAuthenticationService>().InstancePerLifetimeScope();
+			builder.RegisterType<FacebookAuthenticationService>().As<IFacebookAuthenticationService>().InstancePerLifetimeScope();
 
 			//CacheDecorators
 			builder.RegisterDecorator<AzureDevOpsCacheService, IAzureDevOpsService>();

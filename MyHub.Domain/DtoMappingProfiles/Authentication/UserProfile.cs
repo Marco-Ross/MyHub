@@ -11,7 +11,9 @@ namespace MyHub.Domain.DtoMappingProfiles.Authentication
 			CreateMap<LoginUserDto, AccessingUser>();
 			CreateMap<RegisterUserDto, AccessingUser>().ForPath(x => x.User.Username, m => m.MapFrom(u => u.Username));
 
-			CreateMap<AccessingUser, HubUserDto>().ForPath(x => x.Username, m => m.MapFrom(u => u.User.Username));
+			CreateMap<AccessingUser, HubUserDto>()
+				.ForPath(x => x.Username, m => m.MapFrom(u => u.User.Username))
+				.ForPath(x => x.LoginIssuer, m => m.MapFrom(u => u.ThirdPartyDetails.ThirdPartyIssuerId));
 
 			CreateMap<AccessingUser, AccountSettingsUserDto>()
 				.ForPath(x => x.Username, m => m.MapFrom(u => u.User.Username))

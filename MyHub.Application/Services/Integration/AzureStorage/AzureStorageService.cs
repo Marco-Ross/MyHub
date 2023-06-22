@@ -29,8 +29,11 @@ namespace MyHub.Application.Services.Integration.AzureStorage
 			return new BlobClient(blobUri, storageCredentials);
 		}
 
-		public async Task<bool> UploadFileToStorage(Stream fileStream, AzureStorageOptions storageOptions)
+		public async Task<bool> UploadFileToStorage(Stream? fileStream, AzureStorageOptions storageOptions)
 		{
+			if(fileStream is null)
+				return false;
+
 			var blobClient = GetBlobClient(storageOptions);
 
 			fileStream.Position = 0;

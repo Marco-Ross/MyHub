@@ -5,17 +5,16 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using MyHub.Api.Controllers;
 using MyHub.Domain.Authentication;
-using MyHub.Domain.Authentication.Google;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.ConfigurationOptions.Authentication;
+using MyHub.Domain.Enums.Enumerations;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.UsersDto;
-using System.IdentityModel.Tokens.Jwt;
 using System.Text.Json;
 
 namespace MyHub.Controllers
 {
-    [Authorize]
+	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
 	public class AuthenticationController : BaseController
@@ -25,17 +24,15 @@ namespace MyHub.Controllers
 		private readonly IAuthenticationService _authenticationService;
 		private readonly ICsrfEncryptionService _encryptionService;
 		private readonly ILogger<AuthenticationController> _logger;
-		private readonly ISharedAuthServiceFactory _sharedAuthServiceFactory;
 
 		public AuthenticationController(IOptions<AuthenticationOptions> authOptions, IMapper mapper, IAuthenticationService authenticationService,
-			ICsrfEncryptionService encryptionService, ILogger<AuthenticationController> logger, ISharedAuthServiceFactory sharedAuthServiceFactory)
+			ICsrfEncryptionService encryptionService, ILogger<AuthenticationController> logger)
 		{
 			_authOptions = authOptions.Value;
 			_authenticationService = authenticationService;
 			_encryptionService = encryptionService;
 			_mapper = mapper;
 			_logger = logger;
-			_sharedAuthServiceFactory = sharedAuthServiceFactory;
 		}
 
 		private void SetCookieDetails(LoginDetails loginTokens)
@@ -87,6 +84,9 @@ namespace MyHub.Controllers
 		[HttpPost("ResetPasswordLoggedIn")]
 		public IActionResult ResetPasswordLoggedIn(ResetPasswordLoggedInDto resetPasswordDto)
 		{
+			if (IssuerManaging != LoginIssuers.MarcosHub)
+				return BadRequest("Cannot update on third party login.");
+
 			if (!Request.Cookies.TryGetValue(AuthConstants.RefreshToken, out var refreshToken))
 				return BadRequest("Refresh Token not set");
 
@@ -139,6 +139,9 @@ namespace MyHub.Controllers
 		[HttpPost("LoginToContinue")]
 		public IActionResult LoginToContinue(LoginUserDto userDto)
 		{
+			if (IssuerManaging != LoginIssuers.MarcosHub)
+				return BadRequest("Cannot request a login using a third party login.");
+
 			var idToken = _authenticationService.AuthenticateUserGetTokens(UserId, userDto.Email, userDto.Password);
 
 			if (string.IsNullOrWhiteSpace(idToken))
@@ -157,9 +160,7 @@ namespace MyHub.Controllers
 				return BadRequest("Access Token or Refresh Token not set");
 			}
 
-			var jwtToken = new JwtSecurityTokenHandler().ReadJwtToken(idToken);
-
-			var refreshValidation = _sharedAuthServiceFactory.GetAuthService(jwtToken.Issuer).RefreshUserAuthentication(idToken, refreshToken);
+			var refreshValidation = _authenticationService.RefreshUserAuthentication(idToken, refreshToken);
 
 			if (refreshValidation.IsInvalid)
 			{
@@ -178,10 +179,10 @@ namespace MyHub.Controllers
 		[HttpPost("Revoke")]
 		public IActionResult Revoke()
 		{
-			if (!Request.Cookies.TryGetValue(AuthConstants.RefreshToken, out var refreshToken))
+			if (!Request.Cookies.TryGetValue(AuthConstants.RefreshToken, out var token))
 				return BadRequest("Refresh Token not set");
 
-			var isUserRevoked = _authenticationService.RevokeUser(UserId, refreshToken);
+			var isUserRevoked = _authenticationService.RevokeUser(UserId, token);
 
 			if (!isUserRevoked)
 				return Forbid(JwtBearerDefaults.AuthenticationScheme);
@@ -204,6 +205,9 @@ namespace MyHub.Controllers
 		[HttpPost("ChangeEmail")]
 		public async Task<IActionResult> ChangeEmail(ChangeEmailDto changeEmailDto)
 		{
+			if (IssuerManaging != LoginIssuers.MarcosHub)
+				return BadRequest("Cannot change email using third party login.");
+
 			var changeEmailValidator = await _authenticationService.ChangeUserEmail(UserId, changeEmailDto.Email, changeEmailDto.IdToken);
 
 			if (changeEmailValidator.IsInvalid)
