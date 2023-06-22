@@ -3,136 +3,167 @@ using Google.Apis.Auth.OAuth2;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Domain.Validation;
-using System.IdentityModel.Tokens.Jwt;
 using Microsoft.Extensions.Options;
 using MyHub.Domain.ConfigurationOptions.Authentication;
-using MyHub.Infrastructure.Repository.EntityFramework;
-using MyHub.Domain.Users.UsersDto;
 using MyHub.Domain.Authentication.Google;
 using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Auth;
 using MyHub.Domain.Users.Google;
 using MyHub.Domain.Users;
 using MyHub.Domain.Enums.Enumerations;
+using Google.Apis.Util;
+using MyHub.Domain.Authentication.Claims;
+using MyHub.Domain.Authentication.Interfaces;
 
 namespace MyHub.Application.Services.Authentication
 {
 	public class GoogleAuthenticationService : IGoogleAuthenticationService
 	{
-		private readonly IUsersService _hubUsersService;
+		private readonly IUsersService _usersService;
+		private readonly IGoogleUsersService _googleUsersService;
+		private readonly IAuthenticationService _authenticationService;
 		private readonly AuthenticationOptions _authOptions;
-		private readonly ApplicationDbContext _applicationDbContext;
+		private readonly IClock _clock = SystemClock.Default;
 
-		public GoogleAuthenticationService(ApplicationDbContext applicationDbContext, IUsersService hubUsersService, IOptions<AuthenticationOptions> authOptions)
+		public GoogleAuthenticationService(IUsersService hubUsersService, IGoogleUsersService googleUsersService, IAuthenticationService authenticationService, IOptions<AuthenticationOptions> authOptions)
 		{
-			_applicationDbContext = applicationDbContext;
-			_hubUsersService = hubUsersService;
+			_usersService = hubUsersService;
+			_googleUsersService = googleUsersService;
+			_authenticationService = authenticationService;
 			_authOptions = authOptions.Value;
 		}
 
-		public Validator<LoginDetails> RefreshUserAuthentication(string idToken, string refreshToken)
+		public Validator<TokenResponse> RefreshUserAuthentication(string userId, string refreshToken)
 		{
-			var tokenHandler = new JwtSecurityTokenHandler();
-			var jwtToken = tokenHandler.ReadJwtToken(idToken);
-
-			var user = _hubUsersService.GetFullAccessingUserById(jwtToken.Subject);
-
-			if (user is null)
-				return new Validator<LoginDetails>().AddError("User does not exist.");
-
-			var tokenResponse = RefreshToken(refreshToken, user).Result;
-
-			user.ThirdPartyIdToken = tokenResponse.IdToken;
-			user.ThirdPartyAccessToken = tokenResponse.AccessToken;
-			_hubUsersService.UpdateRefreshToken(user, refreshToken, tokenResponse.RefreshToken);
-
-
-			var newJwtToken = tokenHandler.ReadJwtToken(tokenResponse.IdToken);
-
-			// see if i can make this more sharable with the login. since login issuer is set here and on the login.
-			//Cleanup code in here.
-			var loginDetails = new LoginDetails
+			try
 			{
-				Tokens = new Tokens { IdToken = tokenResponse.IdToken, RefreshToken = tokenResponse.RefreshToken },
-				HubUserDto = new HubUserDto
-				{
-					Email = newJwtToken.Claims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Email)?.Value ?? string.Empty,
-					Username = newJwtToken.Claims.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Name)?.Value ?? string.Empty,
-					LoginIssuer = LoginIssuers.Google.Name
-				}
-			};
+				//If google call fails, can use this to refresh before making call again.
 
-			return new Validator<LoginDetails>().Response(loginDetails);
+				var user = _usersService.GetFullAccessingUserById(userId);
+
+				if (user is null)
+					return new Validator<TokenResponse>().AddError("User does not exist.");
+
+				var tokenResponse = RefreshToken(refreshToken, user).Result;
+
+				if (tokenResponse is null || tokenResponse.IsExpired(_clock) || string.IsNullOrWhiteSpace(tokenResponse.IdToken)
+					|| string.IsNullOrWhiteSpace(tokenResponse.AccessToken) || string.IsNullOrWhiteSpace(tokenResponse.RefreshToken))
+				{
+					_usersService.RevokeUser(user, refreshToken);
+
+					return new Validator<TokenResponse>().AddError("Your login session has expired.");
+				}
+
+				return new Validator<TokenResponse>(tokenResponse);
+			}
+			catch (Exception)
+			{
+				return new Validator<TokenResponse>().AddError("Your login session has expired.");
+			}
 		}
 
-		private async Task<TokenResponse> RefreshToken(string refreshToken, AccessingUser user)
+		private async Task<TokenResponse?> RefreshToken(string refreshToken, AccessingUser user)
 		{
-			var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
+			try
 			{
-				ClientSecrets = new ClientSecrets
-				{
-					ClientId = _authOptions.ThirdPartyLogin.Google.ClientId,
-					ClientSecret = _authOptions.ThirdPartyLogin.Google.ClientSecret
-				}
-			});
-
-			var tokenResponse = await flow.RefreshTokenAsync(user.Id, refreshToken, CancellationToken.None);
-			return tokenResponse;
+				return await GetCodeFlow().RefreshTokenAsync(user.Id, refreshToken, CancellationToken.None);
+			}
+			catch (Exception)
+			{
+				return null;
+			}
 		}
 
-		public async Task<GoogleUser> ExchangeAuthCode(string authUser, string authCode)
+		private GoogleAuthorizationCodeFlow GetCodeFlow()
 		{
-			var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
+			return new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
 			{
 				ClientSecrets = new ClientSecrets
 				{
 					ClientId = _authOptions.ThirdPartyLogin.Google.ClientId,
 					ClientSecret = _authOptions.ThirdPartyLogin.Google.ClientSecret
 				},
-				Scopes = new[] { "profile", "email", "openid" },
-				Prompt = "consent"
+				Scopes = new[] { "profile", "email", "openid" }
 			});
-
-			var tokenResponse = await flow.ExchangeCodeForTokenAsync(authUser, authCode, _authOptions.ThirdPartyLogin.Google.RedirectUri, CancellationToken.None);
-
-			return CreateOrUpdateUser(tokenResponse);
 		}
 
-		private GoogleUser CreateOrUpdateUser(TokenResponse tokenResponse)
+		private Tokens GenerateTokens(GoogleJsonWebSignature.Payload payload)
 		{
+			return _authenticationService.GenerateTokens(new HubClaims
+			{
+				Sub = payload.Subject,
+				Email = payload.Email,
+				Name = payload.Name,
+				Iss = _authOptions.JWT.Issuer,
+				IssManaging = LoginIssuers.Google.Id,
+				Aud = _authOptions.JWT.Audience,
+				FamilyName = payload.FamilyName,
+				GivenName = payload.GivenName
+			});
+		}
+
+		public async Task<Validator<GoogleUser>> ExchangeAuthCode(string authUser, string authCode, string nonce)
+		{
+			var tokenResponse = await GetCodeFlow().ExchangeCodeForTokenAsync(authUser, authCode, _authOptions.ThirdPartyLogin.Google.RedirectUri, CancellationToken.None);
+
 			var payload = GoogleJsonWebSignature.ValidateAsync(tokenResponse.IdToken, new GoogleJsonWebSignature.ValidationSettings { Audience = new List<string> { _authOptions.ThirdPartyLogin.Google.Audience } }).Result;
 
-			var googleUser = _hubUsersService.GetFullAccessingUserById(payload.Subject);
+			if (nonce != payload.Nonce)
+				return new Validator<GoogleUser>().AddError("Nonce is invalid. Cannot login.");
 
-			if (googleUser is not null)
+			var hubTokens = GenerateTokens(payload);
+
+			var createOrUpdate = await CreateOrUpdateUser(payload, hubTokens);
+
+			if (createOrUpdate.IsInvalid)
+				return createOrUpdate;
+
+			var googleUser = new GoogleUser
 			{
-				googleUser.Email = payload.Email;
-				googleUser.ThirdPartyIdToken = tokenResponse.IdToken;
-				googleUser.ThirdPartyAccessToken = tokenResponse.AccessToken;
-				_hubUsersService.AddRefreshToken(googleUser, tokenResponse.RefreshToken);
+				Email = payload.Email,
+				Username = payload.Name,
+				IdToken = hubTokens.IdToken,
+				AccessToken = tokenResponse.AccessToken,
+				RefreshToken = hubTokens.RefreshToken
+			};
+
+			return new Validator<GoogleUser>(googleUser);
+		}
+
+		private async Task<Validator<GoogleUser>> CreateOrUpdateUser(GoogleJsonWebSignature.Payload payload, Tokens tokens)
+		{
+			var hubUser = _usersService.GetFullAccessingUserByEmail(payload.Email);
+
+			if (hubUser is not null)
+			{
+				if (hubUser.ThirdPartyDetails.ThirdPartyIssuerId != LoginIssuers.Google.Id)
+					return new Validator<GoogleUser>().AddError("Your email address is already associated with Marco's Hub.");
+
+				hubUser.Email = payload.Email;
+				_usersService.AddRefreshToken(hubUser, tokens.RefreshToken);
 			}
 			else
 			{
 				var user = new AccessingUser
 				{
-					User = new User { Id = payload.Subject },
+					User = new User { Id = payload.Subject, Name = payload.GivenName ?? string.Empty, Surname = payload.FamilyName ?? string.Empty, Username = payload.Name },
 					Email = payload.Email,
-					ThirdPartyIdToken = tokenResponse.IdToken,
-					ThirdPartyAccessToken = tokenResponse.AccessToken,
-					RefreshTokens = new List<RefreshToken> { new RefreshToken { Id = Guid.NewGuid().ToString(), Token = tokenResponse.RefreshToken, CreatedDate = DateTime.Now } }
+					ThirdPartyDetails = new ThirdPartyDetails
+					{
+						ThirdPartyIssuerId = LoginIssuers.Google.Id
+					},
+					RefreshTokens = new List<RefreshToken> { new RefreshToken { Id = Guid.NewGuid().ToString(), Token = tokens.RefreshToken, CreatedDate = DateTime.Now } }
 				};
 
-				_hubUsersService.RegisterThirdParty(user);
+				var uploaded = await _usersService.UpdateUserProfileImage(user.User.Id, await _googleUsersService.GetUserProfileImage(payload.Picture));
+
+				if (uploaded)
+					_usersService.RegisterThirdParty(user);
+				else
+					return new Validator<GoogleUser>().AddError("Unable to create user.");
 			}
 
-			return new GoogleUser
-			{
-				Email = payload.Email,
-				Username = payload.Name,
-				IdToken = tokenResponse.IdToken,
-				AccessToken = tokenResponse.AccessToken,
-				RefreshToken = tokenResponse.RefreshToken
-			};
+			return new Validator<GoogleUser>();
 		}
 	}
 }

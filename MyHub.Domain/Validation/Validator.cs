@@ -2,6 +2,13 @@
 {
 	public class Validator<T> where T : new()
 	{
+		public Validator() { }
+
+		public Validator(T response) 
+		{
+			ResponseValue = response;
+		}
+
 		public List<string> Errors { get; set; } = new List<string>();
 		public string ErrorsString => string.Join(", ", Errors);
 		public T ResponseValue { get; set; } = new T();
@@ -13,12 +20,6 @@
 			IsValid = false;
 			IsInvalid = true;
 			Errors.Add(error);
-			return this;
-		}
-		
-		public Validator<T> Response(T response)
-		{
-			ResponseValue = response;
 			return this;
 		}
 	}

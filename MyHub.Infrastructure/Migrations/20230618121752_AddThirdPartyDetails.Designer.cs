@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyHub.Infrastructure.Repository.EntityFramework;
 
@@ -11,9 +12,11 @@ using MyHub.Infrastructure.Repository.EntityFramework;
 namespace MyHub.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230618121752_AddThirdPartyDetails")]
+    partial class AddThirdPartyDetails
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -160,6 +163,12 @@ namespace MyHub.Infrastructure.Migrations
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ThirdPartyAccessToken")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ThirdPartyIdToken")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ThirdPartyIssuerId")
                         .HasColumnType("nvarchar(max)");

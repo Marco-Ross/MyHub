@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyHub.Domain.Authentication;
-using MyHub.Domain.Authentication.Google;
+using MyHub.Domain.Enums.Enumerations;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Domain.Users.UsersDto;
@@ -10,26 +10,24 @@ using System.Text.Json;
 
 namespace MyHub.Api.Controllers
 {
-    [Authorize]
+	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
 	public class UsersController : BaseController
 	{
 		private readonly IMapper _mapper;
 		private readonly IUsersService _userService;
-		private readonly ISharedAuthServiceFactory _sharedAuthServiceFactory;
 
-		public UsersController(IUsersService userService, ISharedAuthServiceFactory sharedAuthServiceFactory, IMapper mapper)
+		public UsersController(IUsersService userService, IMapper mapper)
 		{
 			_userService = userService;
-			_sharedAuthServiceFactory = sharedAuthServiceFactory;
-			_mapper = mapper;	
+			_mapper = mapper;
 		}
 
 		[HttpGet]
 		public IActionResult Get()
 		{
-			return Ok(_mapper.Map<AccountSettingsUserDto>(_sharedAuthServiceFactory.GetUsersService(LoginIssuer).GetFullAccessingUserById(UserId)));
+			return Ok(_mapper.Map<AccountSettingsUserDto>(_userService.GetFullAccessingUserById(UserId)));
 		}
 
 		[HttpPut]
@@ -54,12 +52,6 @@ namespace MyHub.Api.Controllers
 			return Ok();
 		}
 
-		[HttpDelete()]
-		public IActionResult Delete()
-		{
-			return Ok();
-		}
-
 		[HttpPut("Theme")]
 		public IActionResult UpdateUserTheme(ThemeOptionsDto themeOptionsDto)
 		{
@@ -77,7 +69,7 @@ namespace MyHub.Api.Controllers
 		[HttpGet("ProfileImage")]
 		public async Task<IActionResult> GetProfileImage()
 		{
-			var image = await _sharedAuthServiceFactory.GetUsersService(LoginIssuer).GetUserProfileImage(UserId);
+			var image = await _userService.GetUserProfileImage(UserId);
 
 			if (image is null)
 				return Ok();
@@ -99,6 +91,9 @@ namespace MyHub.Api.Controllers
 		[HttpDelete("ProfileImage")]
 		public async Task<IActionResult> DeleteProfileImage()
 		{
+			if (IssuerManaging != LoginIssuers.MarcosHub)
+				return BadRequest("Cannot delete profile image using a third party login.");
+
 			var imageDeleted = await _userService.DeleteUserProfileImage(UserId);
 
 			if (!imageDeleted)

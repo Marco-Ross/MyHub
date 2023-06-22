@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyHub.Infrastructure.Repository.EntityFramework;
 
@@ -11,9 +12,11 @@ using MyHub.Infrastructure.Repository.EntityFramework;
 namespace MyHub.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230613102843_FixThirdPartyLogins")]
+    partial class FixThirdPartyLogins
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -125,6 +128,10 @@ namespace MyHub.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ProfileImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("RegisterToken")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -151,22 +158,12 @@ namespace MyHub.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
-
-                    b.ToTable("AccessingUsers");
-                });
-
-            modelBuilder.Entity("MyHub.Domain.Users.ThirdPartyDetails", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ThirdPartyIssuerId")
+                    b.Property<string>("ThirdPartyIdToken")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("ThirdPartyDetails");
+                    b.ToTable("AccessingUsers");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Users.User", b =>
@@ -242,17 +239,6 @@ namespace MyHub.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MyHub.Domain.Users.ThirdPartyDetails", b =>
-                {
-                    b.HasOne("MyHub.Domain.Users.AccessingUser", "AccessingUser")
-                        .WithOne("ThirdPartyDetails")
-                        .HasForeignKey("MyHub.Domain.Users.ThirdPartyDetails", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AccessingUser");
-                });
-
             modelBuilder.Entity("MyHub.Domain.Emails.AccountRegisterEmail", b =>
                 {
                     b.HasOne("MyHub.Domain.Emails.Email", null)
@@ -274,9 +260,6 @@ namespace MyHub.Infrastructure.Migrations
             modelBuilder.Entity("MyHub.Domain.Users.AccessingUser", b =>
                 {
                     b.Navigation("RefreshTokens");
-
-                    b.Navigation("ThirdPartyDetails")
-                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

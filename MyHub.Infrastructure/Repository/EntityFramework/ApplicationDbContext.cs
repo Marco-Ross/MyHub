@@ -16,6 +16,7 @@ namespace MyHub.Infrastructure.Repository.EntityFramework
 
 		public DbSet<AccessingUser> AccessingUsers { get; set; }
 		public DbSet<RefreshToken> RefreshTokens { get; set; }
+		public DbSet<ThirdPartyDetails> ThirdPartyDetails { get; set; }
 		public DbSet<User> Users { get; set; }
 		public DbSet<Email> Emails { get; set; }
 		public DbSet<AccountRegisterEmail> AccountRegisterEmails { get; set; }

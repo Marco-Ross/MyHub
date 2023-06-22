@@ -81,7 +81,7 @@ namespace MyHub.Application.Services.Users
 
 			return savedUser.Entity;
 		}
-		
+
 		public AccessingUser ResetUserPasswordLoggedIn(AccessingUser user, string newPassword)
 		{
 			user.Password = _encryptionService.HashData(newPassword, out var passwordSalt);
@@ -185,10 +185,10 @@ namespace MyHub.Application.Services.Users
 		public AccessingUser? GetFullAccessingUserByEmail(string email)
 		{
 			if (string.IsNullOrWhiteSpace(email)) return null;
-			return _applicationDbContext.AccessingUsers.Include(x => x.User).Include(x => x.RefreshTokens).SingleOrDefault(x => x.Email == email);
+			return _applicationDbContext.AccessingUsers.Include(x => x.User).Include(x => x.RefreshTokens).Include(x => x.ThirdPartyDetails).SingleOrDefault(x => x.Email == email);
 		}
 
-		public AccessingUser? GetFullAccessingUserById(string id) => _applicationDbContext.AccessingUsers.Include(x => x.User).Include(x => x.RefreshTokens).SingleOrDefault(x => x.Id == id);
+		public AccessingUser? GetFullAccessingUserById(string id) => _applicationDbContext.AccessingUsers.Include(x => x.User).Include(x => x.RefreshTokens).Include(x => x.ThirdPartyDetails).SingleOrDefault(x => x.Id == id);
 		public User? GetUserById(string id) => _applicationDbContext.Users.SingleOrDefault(x => x.Id == id);
 
 		public void AddRefreshToken(AccessingUser authenticatingUser, string refreshToken)
@@ -211,7 +211,7 @@ namespace MyHub.Application.Services.Users
 			_applicationDbContext.SaveChanges();
 		}
 
-		public async Task<bool> UploadUserProfileImage(AccessingUser user)
+		public async Task<bool> RegisterUserProfileImage(AccessingUser user)
 		{
 			if (string.IsNullOrWhiteSpace(user.ProfileImage))
 				return false;
@@ -225,6 +225,9 @@ namespace MyHub.Application.Services.Users
 
 			return await _azureStorageService.UploadFileToStorage(profileImage.ToMemoryStream(), GetProfileImageStorageOptions(userId));
 		}
+
+		public async Task<bool> UpdateUserProfileImage(string userId, Stream? image)
+			=> await _azureStorageService.UploadFileToStorage(image, GetProfileImageStorageOptions(userId));
 
 		public async Task<Stream?> GetUserProfileImage(string userId)
 			=> await _azureStorageService.GetFileFromStorage(GetProfileImageStorageOptions(userId));
