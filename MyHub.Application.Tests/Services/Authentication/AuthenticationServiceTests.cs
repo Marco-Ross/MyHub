@@ -8,6 +8,7 @@ using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.ConfigurationOptions.Domain;
 using MyHub.Domain.Emails;
 using MyHub.Domain.Emails.Interfaces;
+using MyHub.Domain.Enums.Enumerations;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Domain.Validation.FluentValidators;
@@ -146,6 +147,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 		{
 			//Arrange
 			USER.IsEmailVerified = true;
+			USER.ThirdPartyDetails.ThirdPartyIssuerId = LoginIssuers.MarcosHub.Id;
 			USER.ResetPasswordTokenExpireDate = DateTime.Now.AddHours(-1);
 			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(USER);
 
@@ -158,12 +160,27 @@ namespace MyHub.Application.Tests.Services.Authentication
 			Assert.True(validator.IsValid);
 			_emailService.Verify(x => x.CreateAndSendEmail(It.IsAny<PasswordRecoveryEmail>()));
 		}
+		
+		[Fact]
+		public async Task ResetPasswordEmail_LoginIssuerNotLocal_ReturnsInvalid()
+		{
+			//Arrange
+			USER.ThirdPartyDetails.ThirdPartyIssuerId = LoginIssuers.Google.Id;
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(USER);
+
+			//Act
+			var validator = await _sut.ResetPasswordEmail(USER.Email);
+
+			//Assert
+			Assert.True(validator.IsInvalid);
+		}
 
 		[Fact]
 		public async Task ResetPasswordEmail_HasNoExistingResetPasswordTokenDate_ReturnsValid()
 		{
 			//Arrange
 			USER.IsEmailVerified = true;
+			USER.ThirdPartyDetails.ThirdPartyIssuerId = LoginIssuers.MarcosHub.Id;
 			USER.ResetPasswordTokenExpireDate = null;
 			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(USER);
 

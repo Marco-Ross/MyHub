@@ -4,11 +4,13 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MyHub.Application.Helpers.JwtHelpers;
 using MyHub.Domain.Authentication;
+using MyHub.Domain.Authentication.Claims;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.ConfigurationOptions.Domain;
 using MyHub.Domain.Emails;
 using MyHub.Domain.Emails.Interfaces;
+using MyHub.Domain.Enums.Enumerations;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Domain.Users.UsersDto;
@@ -52,7 +54,7 @@ namespace MyHub.Application.Services.Authentication
 
 			var registeredUser = _userService.RegisterUserDetails(accessingUser, registerToken);
 
-			await _userService.UploadUserProfileImage(registeredUser);
+			await _userService.RegisterUserProfileImage(registeredUser);
 
 			await _emailService.CreateAndSendEmail(new AccountRegisterEmail
 			{
@@ -101,6 +103,9 @@ namespace MyHub.Application.Services.Authentication
 
 			if (user is null)
 				return new Validator().AddError("Email address does not exist.");
+			
+			if (user.ThirdPartyDetails.ThirdPartyIssuerId != LoginIssuers.MarcosHub.Id)
+				return new Validator().AddError("Email address is associated with a third party login.");
 
 			if (!user.IsEmailVerified)
 				return new Validator().AddError("Email address not verified.");
@@ -145,11 +150,11 @@ namespace MyHub.Application.Services.Authentication
 			if (!authenticatingUser.IsEmailVerified)
 				return new Validator<LoginDetails>().AddError("Email address not verified.");
 
-			var tokens = GenerateTokens(authenticatingUser);
+			var tokens = GenerateTokens(GetHubClaims(authenticatingUser));
 
 			_userService.AddRefreshToken(authenticatingUser, tokens.RefreshToken);
 
-			return new Validator<LoginDetails>().Response(SetLoginDetails(tokens, authenticatingUser));
+			return new Validator<LoginDetails>(SetLoginDetails(tokens, authenticatingUser));
 		}
 
 		public string AuthenticateUserGetTokens(string userid, string email, string password)
@@ -162,13 +167,13 @@ namespace MyHub.Application.Services.Authentication
 			if (!_encryptionService.VerifyData(password, authenticatingUser.Password, authenticatingUser.PasswordSalt))
 				return string.Empty;
 
-			return GenerateTokens(authenticatingUser).IdToken;
+			return GenerateTokens(GetHubClaims(authenticatingUser)).IdToken;
 		}
 
 		public Validator<LoginDetails> RefreshUserAuthentication(string idToken, string refreshToken)
 		{
 			if (string.IsNullOrWhiteSpace(idToken))
-				return new Validator<LoginDetails>().AddError("Access Token is invalid.");
+				return new Validator<LoginDetails>().AddError("Id Token is invalid.");
 
 			if (string.IsNullOrWhiteSpace(refreshToken))
 				return new Validator<LoginDetails>().AddError("Refresh Token is invalid.");
@@ -192,11 +197,11 @@ namespace MyHub.Application.Services.Authentication
 				return new Validator<LoginDetails>().AddError("Login has been invalidated.");
 			}
 
-			var newTokens = GenerateTokens(user);
+			var newTokens = GenerateTokens(GetHubClaims(user));
 
 			_userService.UpdateRefreshToken(user, refreshToken, newTokens.RefreshToken);
 
-			return new Validator<LoginDetails>().Response(SetLoginDetails(newTokens, user));
+			return new Validator<LoginDetails>(SetLoginDetails(newTokens, user));
 		}
 
 		private LoginDetails SetLoginDetails(Tokens tokens, AccessingUser user)
@@ -204,24 +209,30 @@ namespace MyHub.Application.Services.Authentication
 
 		public bool RevokeUser(string userId, string refreshToken) => _userService.RevokeUser(userId, refreshToken) is not null;
 
-		private Tokens GenerateTokens(AccessingUser user)
+		private HubClaims GetHubClaims(AccessingUser user)
+		{
+			return new HubClaims
+			{
+				Sub = user.Id,
+				Email = user.Email,
+				Name = user.User.Username,
+				Iss = _authOptions.JWT.Issuer,
+				IssManaging = LoginIssuers.MarcosHub.Id,
+				Aud = _authOptions.JWT.Audience,
+				FamilyName = user.User.Surname,
+				GivenName = user.User.Name
+			};
+		}
+
+		public Tokens GenerateTokens(HubClaims claims)
 		{
 			var tokenHandler = new JwtSecurityTokenHandler();
 			var tokenKey = Encoding.UTF8.GetBytes(_authOptions.JWT.Key);
 			var tokenDescriptor = new SecurityTokenDescriptor
 			{
-				Audience = _authOptions.JWT.Audience,
-				Issuer = _authOptions.JWT.Issuer,
-				Subject = new ClaimsIdentity(ClaimsHelper.CreateClaims(new HubClaims
-				{
-					Sub = user.Id,
-					Email = user.Email,
-					Name = user.User.Username,
-					Iss = _authOptions.JWT.Issuer,
-					FamilyName = user.User.Surname,
-					GivenName = user.User.Name
-				})),
-
+				Audience = claims.Aud,
+				Issuer = claims.Iss,
+				Subject = new ClaimsIdentity(ClaimsHelper.CreateClaims(claims)),
 				Expires = DateTime.UtcNow.AddMinutes(15),
 				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey), SecurityAlgorithms.HmacSha256Signature)
 			};

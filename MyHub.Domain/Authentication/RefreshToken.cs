@@ -8,7 +8,6 @@ namespace MyHub.Domain.Authentication
 	{
 		[Key]
 		public string Id { get; set; } = string.Empty;
-		
 		public string Token { get; set; } = string.Empty;
 		public DateTime CreatedDate { get; set; }
 

@@ -12,6 +12,13 @@ namespace MyHub.Domain.Enums.Enumerations
 
 		public override string ToString() => Name;
 
+		public static T? FromId<T>(string id) where T : Enumeration
+		{
+			var properties = typeof(T).GetFields(BindingFlags.Static | BindingFlags.Public);
+			return properties.Select(propertyInfo => propertyInfo.GetValue(null) as T)
+				.SingleOrDefault(property => property?.Id.Equals(id) ?? false);
+		}
+
 		public static IEnumerable<T> GetAll<T>() where T : Enumeration =>
 			typeof(T).GetFields(BindingFlags.Public |
 								BindingFlags.Static |
