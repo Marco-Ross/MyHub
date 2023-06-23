@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using MyHub.Domain.Enums.Enumerations;
+using System.ComponentModel.DataAnnotations;
 
 namespace MyHub.Domain.Users.UsersDto
 {
@@ -14,6 +15,7 @@ namespace MyHub.Domain.Users.UsersDto
 		public string Surname { get; set; } = string.Empty;
 		[Required]
 		public string Password { get; set; } = string.Empty;
+		public string Theme { get; set; } = HubThemes.SystemTheme.Name;
 		public string ProfileImage { get; set; } = string.Empty;
     }
 }
