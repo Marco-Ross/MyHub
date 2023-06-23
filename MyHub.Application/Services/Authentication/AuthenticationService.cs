@@ -59,7 +59,7 @@ namespace MyHub.Application.Services.Authentication
 			await _emailService.CreateAndSendEmail(new AccountRegisterEmail
 			{
 				UserId = registeredUser.Id,
-				To = registeredUser.Email,
+				To = registeredUser.User.Email,
 				ToName = registeredUser.User.Username,
 				Subject = "Account Registration",
 				RegisterToken = registerToken,
@@ -120,7 +120,7 @@ namespace MyHub.Application.Services.Authentication
 			await _emailService.CreateAndSendEmail(new PasswordRecoveryEmail
 			{
 				UserId = resetUser.Id,
-				To = resetUser.Email,
+				To = resetUser.User.Email,
 				ToName = resetUser.User.Username,
 				Subject = "Password Recovery",
 				ResetPasswordToken = resetToken,
@@ -214,7 +214,7 @@ namespace MyHub.Application.Services.Authentication
 			return new HubClaims
 			{
 				Sub = user.Id,
-				Email = user.Email,
+				Email = user.User.Email,
 				Name = user.User.Username,
 				Iss = _authOptions.JWT.Issuer,
 				IssManaging = LoginIssuers.MarcosHub.Id,
@@ -338,7 +338,7 @@ namespace MyHub.Application.Services.Authentication
 				To = newEmail,
 				ToName = user.User.Username,
 				Subject = "Email Change Request",
-				PreviousEmail = user.Email,
+				PreviousEmail = user.User.Email,
 				ChangeEmailToken = changeEmailToken,
 				ClientDomainAddress = _domainOptions.Client
 			});

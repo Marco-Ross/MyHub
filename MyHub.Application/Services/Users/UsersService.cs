@@ -180,12 +180,12 @@ namespace MyHub.Application.Services.Users
 			_applicationDbContext.SaveChanges();
 		}
 
-		public bool UserExists(string email) => _applicationDbContext.AccessingUsers.Any(x => x.Email == email);
+		public bool UserExists(string email) => _applicationDbContext.Users.Any(x => x.Email == email);
 
 		public AccessingUser? GetFullAccessingUserByEmail(string email)
 		{
 			if (string.IsNullOrWhiteSpace(email)) return null;
-			return _applicationDbContext.AccessingUsers.Include(x => x.User).Include(x => x.RefreshTokens).Include(x => x.ThirdPartyDetails).SingleOrDefault(x => x.Email == email);
+			return _applicationDbContext.AccessingUsers.Include(x => x.User).Include(x => x.RefreshTokens).Include(x => x.ThirdPartyDetails).SingleOrDefault(x => x.User.Email == email);
 		}
 
 		public AccessingUser? GetFullAccessingUserById(string id) => _applicationDbContext.AccessingUsers.Include(x => x.User).Include(x => x.RefreshTokens).Include(x => x.ThirdPartyDetails).SingleOrDefault(x => x.Id == id);
@@ -316,7 +316,7 @@ namespace MyHub.Application.Services.Users
 			if (user.ChangeEmailTokenExpireDate is null || user.ChangeEmailTokenExpireDate < DateTime.Now)
 				return new Validator().AddError("Change email address link has expired.");
 
-			user.Email = user.TemporaryNewEmail;
+			user.User.Email = user.TemporaryNewEmail;
 			user.TemporaryNewEmail = string.Empty;
 			user.ChangeEmailToken = string.Empty;
 			user.ChangeEmailTokenSalt = string.Empty;

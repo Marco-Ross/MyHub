@@ -10,7 +10,6 @@ namespace MyHub.Domain.Users
 		public string Id { get; set; } = string.Empty;
 		public User User { get; set; } = new User();
 
-		public string Email { get; set; } = string.Empty;
 		public string Password { get; set; } = string.Empty;
 		public string PasswordSalt { get; set; } = string.Empty;
 		public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
