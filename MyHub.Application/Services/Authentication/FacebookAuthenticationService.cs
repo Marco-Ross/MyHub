@@ -102,15 +102,14 @@ namespace MyHub.Application.Services.Authentication
 				if (hubUser.ThirdPartyDetails.ThirdPartyIssuerId != LoginIssuers.Facebook.Id)
 					return new Validator<FacebookUser>().AddError("Your email address is already associated with Marco's Hub.");
 
-				hubUser.Email = facebookResponse.Email;
+				hubUser.User.Email = facebookResponse.Email;
 				_usersService.AddRefreshToken(hubUser, hubTokens.RefreshToken);
 			}
 			else
 			{
 				var user = new AccessingUser
 				{
-					User = new User { Id = facebookResponse.Id, Name = facebookResponse.FirstName ?? string.Empty, Surname = facebookResponse.LastName ?? string.Empty, Username = facebookResponse.Name },
-					Email = facebookResponse.Email,
+					User = new User { Id = facebookResponse.Id, Email = facebookResponse.Email, Name = facebookResponse.FirstName ?? string.Empty, Surname = facebookResponse.LastName ?? string.Empty, Username = facebookResponse.Name },
 					ThirdPartyDetails = new ThirdPartyDetails
 					{
 						ThirdPartyIssuerId = LoginIssuers.Facebook.Id

@@ -139,15 +139,14 @@ namespace MyHub.Application.Services.Authentication
 				if (hubUser.ThirdPartyDetails.ThirdPartyIssuerId != LoginIssuers.Google.Id)
 					return new Validator<GoogleUser>().AddError("Your email address is already associated with Marco's Hub.");
 
-				hubUser.Email = payload.Email;
+				hubUser.User.Email = payload.Email;
 				_usersService.AddRefreshToken(hubUser, tokens.RefreshToken);
 			}
 			else
 			{
 				var user = new AccessingUser
 				{
-					User = new User { Id = payload.Subject, Name = payload.GivenName ?? string.Empty, Surname = payload.FamilyName ?? string.Empty, Username = payload.Name },
-					Email = payload.Email,
+					User = new User { Id = payload.Subject, Email = payload.Email, Name = payload.GivenName ?? string.Empty, Surname = payload.FamilyName ?? string.Empty, Username = payload.Name },
 					ThirdPartyDetails = new ThirdPartyDetails
 					{
 						ThirdPartyIssuerId = LoginIssuers.Google.Id

@@ -30,7 +30,7 @@ namespace MyHub.Application.Tests.Validators.Authentication
 			//Assert
 			Assert.False(validatorResult.IsValid);
 		}
-		
+
 		[Theory]
 		[InlineData("")]
 		[InlineData(" ")]
@@ -38,26 +38,26 @@ namespace MyHub.Application.Tests.Validators.Authentication
 		public void RegisterValidator_EmptyEmail_ReturnsError(string email)
 		{
 			//Arrange
-			var userRegisterValidator = new UserRegisterValidator(new AccessingUser { Email = email });
+			var userRegisterValidator = new UserRegisterValidator(new AccessingUser { User = new User { Email = email } });
 
 			//Act
 			var validatorResult = _registerValidator.TestValidate(userRegisterValidator);
 
 			//Assert
-			validatorResult.ShouldHaveValidationErrorFor(x => x.AccessingUser.Email).WithErrorCode("EmptyEmail");
+			validatorResult.ShouldHaveValidationErrorFor(x => x.AccessingUser.User.Email).WithErrorCode("EmptyEmail");
 		}
 
 		[Fact]
 		public void RegisterValidator_InvalidEmail_ReturnsError()
 		{
 			//Arrange
-			var userRegisterValidator = new UserRegisterValidator(new AccessingUser { Email = "test.gmail" });
+			var userRegisterValidator = new UserRegisterValidator(new AccessingUser { User = new User { Email = "test.gmail" } });
 
 			//Act
 			var validatorResult = _registerValidator.TestValidate(userRegisterValidator);
 
 			//Assert
-			validatorResult.ShouldHaveValidationErrorFor(x => x.AccessingUser.Email).WithErrorCode("InvalidEmail");
+			validatorResult.ShouldHaveValidationErrorFor(x => x.AccessingUser.User.Email).WithErrorCode("InvalidEmail");
 		}
 
 		[Fact]
@@ -73,7 +73,7 @@ namespace MyHub.Application.Tests.Validators.Authentication
 			validatorResult.ShouldHaveValidationErrorFor(x => x.AccessingUser.User.Username).WithErrorCode("EmptyUsername");
 			validatorResult.ShouldHaveValidationErrorFor(x => x.AccessingUser.Password).WithErrorCode("EmptyPassword");
 		}
-		
+
 		[Fact]
 		public void RegisterValidator_EmptyPassword_ReturnsError()
 		{
@@ -86,12 +86,12 @@ namespace MyHub.Application.Tests.Validators.Authentication
 			//Assert
 			validatorResult.ShouldHaveValidationErrorFor(x => x.AccessingUser.Password).WithErrorCode("EmptyPassword");
 		}
-		
+
 		[Fact]
 		public void RegisterValidator_ValidData_ReturnsValid()
 		{
 			//Arrange
-			var userRegisterValidator = new UserRegisterValidator(new AccessingUser { User = new User { Username = "TestUser" }, Email = "test@gmail.com", Password = "TestPassword" });
+			var userRegisterValidator = new UserRegisterValidator(new AccessingUser { User = new User { Email = "test@gmail.com", Username = "TestUser" }, Password = "TestPassword" });
 
 			//Act
 			var validatorResult = _registerValidator.TestValidate(userRegisterValidator);

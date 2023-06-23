@@ -24,7 +24,7 @@ namespace MyHub.Application.Tests.Services.Users
 			_baseApplicationDbContext = _applicationDbContext;
 			_applicationDbContext.Database.EnsureDeleted();
 
-			USER = new AccessingUser { Id = "TestUserId", Email = "Test@Email.com", User = new User { Id = "TestUserId", Username = "TestUser", Theme = "system-theme" }, Password = "TestPassword" };
+			USER = new AccessingUser { Id = "TestUserId", User = new User { Id = "TestUserId", Email = "Test@Email.com", Username = "TestUser", Theme = "system-theme" }, Password = "TestPassword" };
 			_userService = new UsersService(_applicationDbContext, _encryptionService.Object, _azureStorageService.Object, _usersCacheService.Object);
 		}
 

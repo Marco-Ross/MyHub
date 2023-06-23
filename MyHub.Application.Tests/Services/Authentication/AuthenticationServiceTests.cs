@@ -32,7 +32,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 
 		public AuthenticationServiceTests()
 		{
-			USER = new AccessingUser { Id = "TestUserId", Email = "Test@Email.com", User = new User { Username = "TestUser" }, Password = "TestPassword", PasswordSalt = "" };
+			USER = new AccessingUser { Id = "TestUserId", User = new User { Email = "Test@Email.com", Username = "TestUser" }, Password = "TestPassword", PasswordSalt = "" };
 			_sut = new AuthenticationService(_domainOptions, _authenticationOptions, _userService.Object, _encryptionService.Object, _mapper.Object, _emailService.Object, _registerValidator.Object);
 		}
 
@@ -40,7 +40,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 		public async Task RegisterUser_UserExists_ReturnsInvalid()
 		{
 			//Arrange
-			_userService.Setup(x => x.UserExists(USER.Email)).Returns(true);
+			_userService.Setup(x => x.UserExists(USER.User.Email)).Returns(true);
 
 			_registerValidator.Setup(x => x.Validate(It.IsAny<UserRegisterValidator>())).Returns(GetValidationError("Email", "User exists."));
 
@@ -55,7 +55,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 		public async Task RegisterUser_EnsureUserExistsAndUserSaves_ReturnsValid()
 		{
 			//Arrange
-			_userService.Setup(x => x.UserExists(USER.Email)).Returns(true);
+			_userService.Setup(x => x.UserExists(USER.User.Email)).Returns(true);
 			_userService.Setup(x => x.RegisterUserDetails(It.IsAny<AccessingUser>(), It.IsAny<string>())).Returns(new AccessingUser());
 
 			_registerValidator.Setup(x => x.Validate(It.IsAny<UserRegisterValidator>())).Returns(GetValidationResult);
@@ -118,10 +118,10 @@ namespace MyHub.Application.Tests.Services.Authentication
 		public async Task ResetPasswordEmail_EmailNotValidated_ReturnsInvalid()
 		{
 			//Arrange
-			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(USER);
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.User.Email)).Returns(USER);
 
 			//Act
-			var validator = await _sut.ResetPasswordEmail(USER.Email);
+			var validator = await _sut.ResetPasswordEmail(USER.User.Email);
 
 			//Assert
 			Assert.True(validator.IsInvalid);
@@ -133,10 +133,10 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Arrange
 			USER.IsEmailVerified = true;
 			USER.ResetPasswordTokenExpireDate = DateTime.Now.AddHours(1);
-			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(USER);
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.User.Email)).Returns(USER);
 
 			//Act
-			var validator = await _sut.ResetPasswordEmail(USER.Email);
+			var validator = await _sut.ResetPasswordEmail(USER.User.Email);
 
 			//Assert
 			Assert.True(validator.IsInvalid);
@@ -149,12 +149,12 @@ namespace MyHub.Application.Tests.Services.Authentication
 			USER.IsEmailVerified = true;
 			USER.ThirdPartyDetails.ThirdPartyIssuerId = LoginIssuers.MarcosHub.Id;
 			USER.ResetPasswordTokenExpireDate = DateTime.Now.AddHours(-1);
-			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(USER);
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.User.Email)).Returns(USER);
 
 			_userService.Setup(x => x.ResetUserPassword(It.IsAny<AccessingUser>(), It.IsAny<string>())).Returns(USER);
 
 			//Act
-			var validator = await _sut.ResetPasswordEmail(USER.Email);
+			var validator = await _sut.ResetPasswordEmail(USER.User.Email);
 
 			//Assert
 			Assert.True(validator.IsValid);
@@ -166,10 +166,10 @@ namespace MyHub.Application.Tests.Services.Authentication
 		{
 			//Arrange
 			USER.ThirdPartyDetails.ThirdPartyIssuerId = LoginIssuers.Google.Id;
-			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(USER);
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.User.Email)).Returns(USER);
 
 			//Act
-			var validator = await _sut.ResetPasswordEmail(USER.Email);
+			var validator = await _sut.ResetPasswordEmail(USER.User.Email);
 
 			//Assert
 			Assert.True(validator.IsInvalid);
@@ -182,12 +182,12 @@ namespace MyHub.Application.Tests.Services.Authentication
 			USER.IsEmailVerified = true;
 			USER.ThirdPartyDetails.ThirdPartyIssuerId = LoginIssuers.MarcosHub.Id;
 			USER.ResetPasswordTokenExpireDate = null;
-			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(USER);
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.User.Email)).Returns(USER);
 
 			_userService.Setup(x => x.ResetUserPassword(It.IsAny<AccessingUser>(), It.IsAny<string>())).Returns(USER);
 
 			//Act
-			var validator = await _sut.ResetPasswordEmail(USER.Email);
+			var validator = await _sut.ResetPasswordEmail(USER.User.Email);
 
 			//Assert
 			Assert.True(validator.IsValid);
@@ -263,7 +263,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Arrange
 
 			//Act
-			var validator = _sut.AuthenticateUser(USER.Email, password);
+			var validator = _sut.AuthenticateUser(USER.User.Email, password);
 
 			//Assert
 			Assert.True(validator.IsInvalid);
@@ -276,7 +276,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			_encryptionService.Setup(x => x.VerifyData(USER.Password, "Pass", "PassSalt")).Returns(false);
 
 			//Act
-			var validator = _sut.AuthenticateUser(USER.Email, USER.Password);
+			var validator = _sut.AuthenticateUser(USER.User.Email, USER.Password);
 
 			//Assert
 			Assert.True(validator.IsInvalid);
@@ -287,10 +287,10 @@ namespace MyHub.Application.Tests.Services.Authentication
 		{
 			//Arrange
 			_encryptionService.Setup(x => x.VerifyData(USER.Password, "Pass", "PassSalt")).Returns(true);
-			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(new AccessingUser());
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.User.Email)).Returns(new AccessingUser());
 
 			//Act
-			var validator = _sut.AuthenticateUser(USER.Email, USER.Password);
+			var validator = _sut.AuthenticateUser(USER.User.Email, USER.Password);
 
 			//Assert
 			Assert.True(validator.IsInvalid);
@@ -301,11 +301,11 @@ namespace MyHub.Application.Tests.Services.Authentication
 		{
 			//Arrange
 			USER.IsEmailVerified = true;
-			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(USER);
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.User.Email)).Returns(USER);
 			_encryptionService.Setup(x => x.VerifyData(USER.Password, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
 
 			//Act
-			var validator = _sut.AuthenticateUser(USER.Email, USER.Password);
+			var validator = _sut.AuthenticateUser(USER.User.Email, USER.Password);
 
 			//Assert
 			Assert.True(validator.IsValid);
@@ -360,7 +360,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 		public void RefreshUserAuthentication_ValidJWTTokenInvalidUser_ReturnsInvalid()
 		{
 			//Arrange
-			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(() => null);
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.User.Email)).Returns(() => null);
 
 			//Act
 			var validator = _sut.RefreshUserAuthentication(ACCESSTOKEN, "RefreshToken");
@@ -446,7 +446,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 		public void AuthenticateUserToContinue_InvalidEmail_ReturnsEmpty(string email)
 		{
 			//Arrange
-			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.Email)).Returns(() => null);
+			_userService.Setup(x => x.GetFullAccessingUserByEmail(USER.User.Email)).Returns(() => null);
 
 			//Act
 			var token = _sut.AuthenticateUserGetTokens(USER.Id, email, USER.Password);
@@ -476,7 +476,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			_encryptionService.Setup(x => x.VerifyData("InvalidPassword", It.IsAny<string>(), It.IsAny<string>())).Returns(false);
 
 			//Act
-			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.Email, "InvalidPassword");
+			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.User.Email, "InvalidPassword");
 
 			//Assert
 			Assert.Empty(token);
@@ -490,7 +490,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			_encryptionService.Setup(x => x.VerifyData(USER.Password, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
 
 			//Act
-			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.Email, USER.Password);
+			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.User.Email, USER.Password);
 
 			//Assert
 			Assert.NotEmpty(token);
@@ -519,7 +519,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Arrange
 			_userService.Setup(x => x.GetFullAccessingUserByEmail(It.IsAny<string>())).Returns(USER);
 			_encryptionService.Setup(x => x.VerifyData(USER.Password, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
-			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.Email, USER.Password);
+			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.User.Email, USER.Password);
 
 			_userService.Setup(x => x.UserExists("newEmail")).Returns(true);
 
@@ -536,7 +536,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			//Arrange
 			_userService.Setup(x => x.GetFullAccessingUserByEmail(It.IsAny<string>())).Returns(USER);
 			_encryptionService.Setup(x => x.VerifyData(USER.Password, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
-			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.Email, USER.Password);
+			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.User.Email, USER.Password);
 
 			_userService.Setup(x => x.GetFullAccessingUserById(It.IsAny<string>())).Returns(() => null);			
 
@@ -557,7 +557,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 
 			_userService.Setup(x => x.GetFullAccessingUserByEmail(It.IsAny<string>())).Returns(USER);
 			_encryptionService.Setup(x => x.VerifyData(USER.Password, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
-			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.Email, USER.Password);
+			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.User.Email, USER.Password);
 
 
 			_userService.Setup(x => x.GetFullAccessingUserById(It.IsAny<string>())).Returns(USER);
@@ -579,7 +579,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 
 			_userService.Setup(x => x.GetFullAccessingUserByEmail(It.IsAny<string>())).Returns(USER);
 			_encryptionService.Setup(x => x.VerifyData(USER.Password, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
-			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.Email, USER.Password);
+			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.User.Email, USER.Password);
 
 
 			_userService.Setup(x => x.GetFullAccessingUserById(It.IsAny<string>())).Returns(USER);
@@ -601,7 +601,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 
 			_userService.Setup(x => x.GetFullAccessingUserByEmail(It.IsAny<string>())).Returns(USER);
 			_encryptionService.Setup(x => x.VerifyData(USER.Password, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
-			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.Email, USER.Password);
+			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.User.Email, USER.Password);
 
 
 			_userService.Setup(x => x.GetFullAccessingUserById(It.IsAny<string>())).Returns(USER);
