@@ -6,6 +6,7 @@ using MyHub.Domain.Enums.Enumerations;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Domain.Users.UsersDto;
+using Octokit;
 using System.Text.Json;
 
 namespace MyHub.Api.Controllers
@@ -17,11 +18,13 @@ namespace MyHub.Api.Controllers
 	{
 		private readonly IMapper _mapper;
 		private readonly IUsersService _userService;
+		private readonly IGitHubClient _githubClient;
 
-		public UsersController(IUsersService userService, IMapper mapper)
+		public UsersController(IUsersService userService, IMapper mapper, IGitHubClient githubClient)
 		{
 			_userService = userService;
 			_mapper = mapper;
+			_githubClient = githubClient;
 		}
 
 		[HttpGet]

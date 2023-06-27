@@ -3,7 +3,7 @@ using MyHub.Application.Services.Users;
 using MyHub.Domain.ConfigurationOptions;
 using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.Interfaces;
-using MyHub.Domain.Users.Facebook;
+using MyHub.Domain.Users.Github;
 using MyHub.Domain.Users.Google;
 using System.Net.Http.Headers;
 using System.Text;
@@ -27,7 +27,7 @@ namespace MyHub.Api.AppExtensions
 			{
 				c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("image/png"));
 			});
-			serviceCollection.AddHttpClient<IFacebookUsersService, FacebookUsersService>(c =>
+			serviceCollection.AddHttpClient<IGithubUsersService, GithubUsersService>(c =>
 			{
 				c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("image/png"));
 			});
