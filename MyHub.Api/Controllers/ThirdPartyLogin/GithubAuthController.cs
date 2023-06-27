@@ -6,51 +6,51 @@ using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Enums.Enumerations;
 using MyHub.Domain.Users.UsersDto;
-using MyHub.Domain.Authentication.Facebook;
 using MyHub.Domain.ConfigurationOptions.Authentication;
 using System.Text.Json;
-using MyHub.Domain.Users.Facebook;
+using MyHub.Domain.Authentication.Github;
+using MyHub.Domain.Users.Github;
 
 namespace MyHub.Api.Controllers.ThirdPartyLogin
 {
 	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
-	public class FacebookAuthController : BaseController
+	public class GithubAuthController : BaseController
 	{
-		private readonly IFacebookAuthenticationService _facebookAuthService;
+		private readonly IGithubAuthenticationService _githubAuthService;
 		private readonly AuthenticationOptions _authOptions;
 		private readonly ICsrfEncryptionService _encryptionService;
 
-		public FacebookAuthController(IFacebookAuthenticationService facebookAuthService, IOptions<AuthenticationOptions> authOptions, ICsrfEncryptionService encryptionService)
+		public GithubAuthController(IGithubAuthenticationService githubAuthService, IOptions<AuthenticationOptions> authOptions, ICsrfEncryptionService encryptionService)
 		{
 			_authOptions = authOptions.Value;
-			_facebookAuthService = facebookAuthService;
+			_githubAuthService = githubAuthService;
 			_encryptionService = encryptionService;
 		}
 
 		[AllowAnonymous]
 		[HttpPost("AccessToken")]
-		public async Task<IActionResult> AccessToken(FacebookAccessOptionsDto facebookAccessOptionsDto)
+		public async Task<IActionResult> AccessToken(GithubAccessOptionsDto githubAccessOptionsDto)
 		{
-			var facebookUserValidation = await _facebookAuthService.ExchangeAuthCode(facebookAccessOptionsDto.Code);
+			var githubUserValidation = await _githubAuthService.ExchangeAuthCode(githubAccessOptionsDto.Code);
 
-			if (facebookUserValidation.IsInvalid)
-				return BadRequest(facebookUserValidation.ErrorsString);
+			if (githubUserValidation.IsInvalid)
+				return BadRequest(githubUserValidation.ErrorsString);
 
-			SetCookieDetails(facebookUserValidation.ResponseValue);
+			SetCookieDetails(githubUserValidation.ResponseValue);
 
 			return Ok();
 		}
 
-		private void SetCookieDetails(FacebookUser facebookUser)
+		private void SetCookieDetails(GithubUser githubUser)
 		{
-			var hubUserDto = new HubUserDto { Email = facebookUser.Email, Username = facebookUser.Username, LoginIssuer = LoginIssuers.Facebook.Id };
+			var hubUserDto = new HubUserDto { Email = githubUser.Email, Username = githubUser.Username, LoginIssuer = LoginIssuers.Github.Id };
 
 			var httpOnlyCookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
-			Response.Cookies.Append(AuthConstants.IdToken, facebookUser.IdToken, httpOnlyCookieOptions);
-			Response.Cookies.Append(AuthConstants.AccessToken, facebookUser.AccessToken, httpOnlyCookieOptions);
-			Response.Cookies.Append(AuthConstants.RefreshToken, facebookUser.RefreshToken, httpOnlyCookieOptions);
+			Response.Cookies.Append(AuthConstants.IdToken, githubUser.IdToken, httpOnlyCookieOptions);
+			Response.Cookies.Append(AuthConstants.AccessToken, githubUser.AccessToken, httpOnlyCookieOptions);
+			Response.Cookies.Append(AuthConstants.RefreshToken, githubUser.RefreshToken, httpOnlyCookieOptions);
 
 			var cookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
 			Response.Cookies.Append(AuthConstants.LoggedIn, JsonSerializer.Serialize(hubUserDto), cookieOptions);

@@ -1,6 +1,6 @@
-﻿namespace MyHub.Domain.Users.Facebook
+﻿namespace MyHub.Domain.Users.Github
 {
-	public class FacebookUser
+	public class GithubUser
 	{
 		public string Email { get; set; } = string.Empty;
 		public string Username { get; set; } = string.Empty;

@@ -15,7 +15,8 @@ using MyHub.Application.Services.Integration.AzureDevOps;
 using MyHub.Application.Services.Integration.AzureStorage;
 using MyHub.Application.Services.Users;
 using MyHub.Domain;
-using MyHub.Domain.Authentication.Facebook;
+using MyHub.Domain.Authentication;
+using MyHub.Domain.Authentication.Github;
 using MyHub.Domain.Authentication.Google;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Background.CleanBackground.Interfaces;
@@ -27,6 +28,7 @@ using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.Interfaces;
 using MyHub.Domain.Users.Google;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Infrastructure.Repository.EntityFramework;
+using Octokit;
 
 namespace MyHub.Api.AutofacModules
 {
@@ -56,7 +58,7 @@ namespace MyHub.Api.AutofacModules
 			builder.RegisterType<AccountRegisterEmailConstructor>();
 			builder.RegisterType<PasswordEmailConstructor>();
 			builder.RegisterType<ChangeEmailConstructor>();
-			
+
 			builder.RegisterType<UsersService>().As<IUsersService>().InstancePerLifetimeScope();
 			builder.RegisterType<UsersCacheService>().As<IUsersCacheService>().InstancePerLifetimeScope();
 			builder.RegisterType<GoogleUsersService>().As<IGoogleUsersService>().InstancePerLifetimeScope();
@@ -73,7 +75,21 @@ namespace MyHub.Api.AutofacModules
 			builder.RegisterType<AzureStorageService>().As<IAzureStorageService>().SingleInstance();
 			builder.RegisterType<ImageQuantizationService>().As<IImageQuantizationService>().InstancePerLifetimeScope();
 			builder.RegisterType<GoogleAuthenticationService>().As<IGoogleAuthenticationService>().InstancePerLifetimeScope();
-			builder.RegisterType<FacebookAuthenticationService>().As<IFacebookAuthenticationService>().InstancePerLifetimeScope();
+			builder.RegisterType<GithubAuthenticationService>().As<IGithubAuthenticationService>().InstancePerLifetimeScope();
+			builder.RegisterType<HttpContextAccessor>().As<IHttpContextAccessor>().SingleInstance();
+			builder.Register<IGitHubClient>(c =>
+			{
+				var httpContextAccessor = c.Resolve<IHttpContextAccessor>();
+				var accessToken = httpContextAccessor?.HttpContext?.Request.Cookies[AuthConstants.AccessToken];
+
+				var githubClient = new GitHubClient(new ProductHeaderValue("MarcosHub"));
+
+				if (!string.IsNullOrWhiteSpace(accessToken))
+					githubClient.Credentials = new Credentials(accessToken ?? string.Empty);
+
+				return githubClient;
+
+			}).InstancePerLifetimeScope();
 
 			//CacheDecorators
 			builder.RegisterDecorator<AzureDevOpsCacheService, IAzureDevOpsService>();
