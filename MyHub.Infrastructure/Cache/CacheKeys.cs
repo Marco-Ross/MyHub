@@ -4,5 +4,6 @@
 	{
 		public static string WorkItemResults => "WorkItemResults";
 		public static string BlacklistedLogins => "BlacklistedLogins";
+		public static string MarcoId => "MarcoId";
 	}
 }

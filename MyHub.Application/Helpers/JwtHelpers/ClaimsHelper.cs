@@ -19,7 +19,8 @@ namespace MyHub.Application.Helpers.JwtHelpers
 				new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
 				new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
 				new Claim(JwtRegisteredClaimNames.Iss, claims.Iss),
-				new Claim(CustomJwtClaimNames.IssuerManaging.Id, claims.IssManaging)
+				new Claim(CustomJwtClaimNames.IssuerManaging.Id, claims.IssManaging),
+				new Claim(CustomJwtClaimNames.IsAdmin.Id, claims.IsAdmin.ToString(), ClaimValueTypes.Boolean)
 			};
 		}
 

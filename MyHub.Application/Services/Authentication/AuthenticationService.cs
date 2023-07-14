@@ -6,6 +6,7 @@ using MyHub.Application.Helpers.JwtHelpers;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Claims;
 using MyHub.Domain.Authentication.Interfaces;
+using MyHub.Domain.ConfigurationOptions.AdminOptions;
 using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.ConfigurationOptions.Domain;
 using MyHub.Domain.Emails;
@@ -31,8 +32,11 @@ namespace MyHub.Application.Services.Authentication
 		private readonly IMapper _mapper;
 		private readonly IEmailService _emailService;
 		private readonly IValidator<UserRegisterValidator> _registerValidator;
+		private readonly MarcoOptions _marco;
 
-		public AuthenticationService(IOptions<DomainOptions> domainOptions, IOptions<AuthenticationOptions> authOptions, IUsersService userService, IEncryptionService passwordEncryptionService, IMapper mapper, IEmailService emailService, IValidator<UserRegisterValidator> registerValidator)
+		public AuthenticationService(IOptions<DomainOptions> domainOptions, IOptions<AuthenticationOptions> authOptions, IUsersService userService,
+			IEncryptionService passwordEncryptionService, IMapper mapper, IEmailService emailService,
+			IValidator<UserRegisterValidator> registerValidator, IOptions<MarcoOptions> marco)
 		{
 			_authOptions = authOptions.Value;
 			_domainOptions = domainOptions.Value;
@@ -41,6 +45,7 @@ namespace MyHub.Application.Services.Authentication
 			_mapper = mapper;
 			_emailService = emailService;
 			_registerValidator = registerValidator;
+			_marco = marco.Value;
 		}
 
 		public async Task<Validator> RegisterUser(AccessingUser accessingUser)
@@ -103,7 +108,7 @@ namespace MyHub.Application.Services.Authentication
 
 			if (user is null)
 				return new Validator().AddError("Email address does not exist.");
-			
+
 			if (user.ThirdPartyDetails.ThirdPartyIssuerId != LoginIssuers.MarcosHub.Id)
 				return new Validator().AddError("Email address is associated with a third party login.");
 
@@ -226,6 +231,8 @@ namespace MyHub.Application.Services.Authentication
 
 		public Tokens GenerateTokens(HubClaims claims)
 		{
+			claims = SetAdminClaim(claims);
+
 			var tokenHandler = new JwtSecurityTokenHandler();
 			var tokenKey = Encoding.UTF8.GetBytes(_authOptions.JWT.Key);
 			var tokenDescriptor = new SecurityTokenDescriptor
@@ -240,6 +247,14 @@ namespace MyHub.Application.Services.Authentication
 			var token = tokenHandler.CreateToken(tokenDescriptor);
 
 			return new Tokens { IdToken = tokenHandler.WriteToken(token), RefreshToken = _encryptionService.GenerateSecureToken() };
+		}
+
+		private HubClaims SetAdminClaim(HubClaims claims)
+		{
+			if (claims.Email == _marco.Email)
+				claims.IsAdmin = true;
+
+			return claims;
 		}
 
 		private ClaimsPrincipal? GetPrincipleFromToken(string token)
@@ -317,7 +332,7 @@ namespace MyHub.Application.Services.Authentication
 			if (!validToken)
 				return new Validator().AddError("Invalid change email attempt.");
 
-			if (_userService.UserExists(newEmail))
+			if (_userService.UserExistsEmail(newEmail))
 				return new Validator().AddError("Email already exists.");
 
 			var user = _userService.GetFullAccessingUserById(userId);

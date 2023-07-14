@@ -4,10 +4,10 @@ using SixLabors.ImageSharp.Processing.Processors.Quantization;
 
 namespace MyHub.Application.Services.Images
 {
-	public class ImageQuantizationService : IImageQuantizationService
+	public class ImageService : IImageService
 	{
 
-		public ImageQuantizationService()
+		public ImageService()
 		{
 		}
 
@@ -26,6 +26,24 @@ namespace MyHub.Application.Services.Images
 			outputImageStream.Position = 0;
 
 			return outputImageStream;
+		}
+
+		public Stream CompressPng(Stream imageInput)
+		{
+			using var image = Image.Load(imageInput);
+
+			var memoryStream = new MemoryStream();
+
+			var pngEncoder = new PngEncoder
+			{
+				CompressionLevel = PngCompressionLevel.BestCompression
+			};
+
+			image.Save(memoryStream, pngEncoder);
+
+			memoryStream.Seek(0, SeekOrigin.Begin);
+
+			return memoryStream;
 		}
 	}
 }
