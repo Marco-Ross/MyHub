@@ -22,7 +22,7 @@ namespace MyHub.Application.Tests.Validators.Authentication
 		{
 			//Arrange
 			var userRegisterValidator = new UserRegisterValidator(new AccessingUser());
-			_userService.Setup(x => x.UserExists(It.IsAny<string>())).Returns(false);
+			_userService.Setup(x => x.UserExistsEmail(It.IsAny<string>())).Returns(false);
 
 			//Act
 			var validatorResult = _registerValidator.TestValidate(userRegisterValidator);

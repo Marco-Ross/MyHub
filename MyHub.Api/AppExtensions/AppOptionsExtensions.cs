@@ -3,6 +3,7 @@ using MyHub.Domain.ConfigurationOptions.Domain;
 using MyHub.Domain.ConfigurationOptions.Storage;
 using MyHub.Domain.ConfigurationOptions;
 using MyHub.Domain.ConfigurationOptions.Authentication;
+using MyHub.Domain.ConfigurationOptions.AdminOptions;
 
 namespace MyHub.Api.AppExtensions
 {
@@ -14,6 +15,7 @@ namespace MyHub.Api.AppExtensions
 			serviceCollection.Configure<DomainOptions>(configuration.GetSection(ConfigSections.Domain));
 			serviceCollection.Configure<CorsOriginOptions>(configuration.GetSection(ConfigSections.CorsOrigin));
 			serviceCollection.Configure<StorageOptions>(configuration.GetSection(ConfigSections.Storage));
+			serviceCollection.Configure<MarcoOptions>(configuration.GetSection(ConfigSections.Marco));
 		}
 	}
 }

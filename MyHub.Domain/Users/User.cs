@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using MyHub.Domain.Gallery;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MyHub.Domain.Users
 {
@@ -11,5 +13,11 @@ namespace MyHub.Domain.Users
 		public string Name { get; set; } = string.Empty;
 		public string Surname { get; set; } = string.Empty;
 		public string Theme { get; set; } = string.Empty;
+
+		[InverseProperty("UserCreated")]
+		public ICollection<GalleryImage> GalleryImages { get; set; } = new List<GalleryImage>();
+
+		[InverseProperty("LikedUsers")]
+		public ICollection<GalleryImage> LikedImages { get; set; } = new List<GalleryImage>();
 	}
 }

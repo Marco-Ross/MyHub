@@ -12,5 +12,6 @@
         public string Aud { get; set; } = string.Empty;
         public string FamilyName { get; set; } = string.Empty;
         public string GivenName { get; set; } = string.Empty;
+        public bool IsAdmin { get; set; }
     }
 }

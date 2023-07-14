@@ -1,4 +1,5 @@
 ﻿using FluentValidation.Results;
+using MyHub.Domain.ConfigurationOptions.AdminOptions;
 using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.ConfigurationOptions.Domain;
 using MyHub.Domain.ConfigurationOptions.Storage;
@@ -44,6 +45,14 @@ namespace MyHub.Application.Tests
 					Audience = "marcos-hub",
 					Issuer = "https://localhost"
 				}
+			};
+		}
+		
+		protected static MarcoOptions GetMarcoOptions()
+		{
+			return new MarcoOptions
+			{
+				Email = "marcoross37@gmail.com"
 			};
 		}
 

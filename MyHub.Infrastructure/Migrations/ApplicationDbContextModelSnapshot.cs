@@ -22,6 +22,21 @@ namespace MyHub.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("GalleryImageUser", b =>
+                {
+                    b.Property<string>("LikedImagesId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("LikedUsersId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("LikedImagesId", "LikedUsersId");
+
+                    b.HasIndex("LikedUsersId");
+
+                    b.ToTable("GalleryImageUser");
+                });
+
             modelBuilder.Entity("MyHub.Domain.Authentication.RefreshToken", b =>
                 {
                     b.Property<string>("Id")
@@ -86,6 +101,62 @@ namespace MyHub.Infrastructure.Migrations
                     b.ToTable("Emails");
 
                     b.UseTptMappingStrategy();
+                });
+
+            modelBuilder.Entity("MyHub.Domain.Gallery.GalleryImage", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Caption")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DateUploaded")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserCreatedId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserCreatedId");
+
+                    b.ToTable("GalleryImages");
+                });
+
+            modelBuilder.Entity("MyHub.Domain.Gallery.GalleryImageComment", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CommentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ImageId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ImageId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("GalleryImageComment");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Users.AccessingUser", b =>
@@ -209,6 +280,21 @@ namespace MyHub.Infrastructure.Migrations
                     b.ToTable("PasswordRecoveryEmails");
                 });
 
+            modelBuilder.Entity("GalleryImageUser", b =>
+                {
+                    b.HasOne("MyHub.Domain.Gallery.GalleryImage", null)
+                        .WithMany()
+                        .HasForeignKey("LikedImagesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MyHub.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("LikedUsersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("MyHub.Domain.Authentication.RefreshToken", b =>
                 {
                     b.HasOne("MyHub.Domain.Users.AccessingUser", "User")
@@ -227,6 +313,34 @@ namespace MyHub.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MyHub.Domain.Gallery.GalleryImage", b =>
+                {
+                    b.HasOne("MyHub.Domain.Users.User", "UserCreated")
+                        .WithMany("GalleryImages")
+                        .HasForeignKey("UserCreatedId");
+
+                    b.Navigation("UserCreated");
+                });
+
+            modelBuilder.Entity("MyHub.Domain.Gallery.GalleryImageComment", b =>
+                {
+                    b.HasOne("MyHub.Domain.Gallery.GalleryImage", "GalleryImage")
+                        .WithMany("GalleryImageComments")
+                        .HasForeignKey("ImageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MyHub.Domain.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GalleryImage");
 
                     b.Navigation("User");
                 });
@@ -271,12 +385,22 @@ namespace MyHub.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("MyHub.Domain.Gallery.GalleryImage", b =>
+                {
+                    b.Navigation("GalleryImageComments");
+                });
+
             modelBuilder.Entity("MyHub.Domain.Users.AccessingUser", b =>
                 {
                     b.Navigation("RefreshTokens");
 
                     b.Navigation("ThirdPartyDetails")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("MyHub.Domain.Users.User", b =>
+                {
+                    b.Navigation("GalleryImages");
                 });
 #pragma warning restore 612, 618
         }

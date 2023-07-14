@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using MyHub.Application.Services.Authentication;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
+using MyHub.Domain.ConfigurationOptions.AdminOptions;
 using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.ConfigurationOptions.Domain;
 using MyHub.Domain.Emails;
@@ -21,6 +22,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 
 		private readonly IOptions<DomainOptions> _domainOptions = Options.Create(GetDomainOptions());
 		private readonly IOptions<AuthenticationOptions> _authenticationOptions = Options.Create(GetAuthOptions());
+		private readonly IOptions<MarcoOptions> _marcoOptions = Options.Create(GetMarcoOptions());
 		private readonly Mock<IUsersService> _userService = new();
 		private readonly Mock<IEncryptionService> _encryptionService = new();
 		private readonly Mock<IMapper> _mapper = new();
@@ -33,14 +35,14 @@ namespace MyHub.Application.Tests.Services.Authentication
 		public AuthenticationServiceTests()
 		{
 			USER = new AccessingUser { Id = "TestUserId", User = new User { Email = "Test@Email.com", Username = "TestUser" }, Password = "TestPassword", PasswordSalt = "" };
-			_sut = new AuthenticationService(_domainOptions, _authenticationOptions, _userService.Object, _encryptionService.Object, _mapper.Object, _emailService.Object, _registerValidator.Object);
+			_sut = new AuthenticationService(_domainOptions, _authenticationOptions, _userService.Object, _encryptionService.Object, _mapper.Object, _emailService.Object, _registerValidator.Object, _marcoOptions);
 		}
 
 		[Fact]
 		public async Task RegisterUser_UserExists_ReturnsInvalid()
 		{
 			//Arrange
-			_userService.Setup(x => x.UserExists(USER.User.Email)).Returns(true);
+			_userService.Setup(x => x.UserExistsEmail(USER.User.Email)).Returns(true);
 
 			_registerValidator.Setup(x => x.Validate(It.IsAny<UserRegisterValidator>())).Returns(GetValidationError("Email", "User exists."));
 
@@ -55,7 +57,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 		public async Task RegisterUser_EnsureUserExistsAndUserSaves_ReturnsValid()
 		{
 			//Arrange
-			_userService.Setup(x => x.UserExists(USER.User.Email)).Returns(true);
+			_userService.Setup(x => x.UserExistsEmail(USER.User.Email)).Returns(true);
 			_userService.Setup(x => x.RegisterUserDetails(It.IsAny<AccessingUser>(), It.IsAny<string>())).Returns(new AccessingUser());
 
 			_registerValidator.Setup(x => x.Validate(It.IsAny<UserRegisterValidator>())).Returns(GetValidationResult);
@@ -521,7 +523,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 			_encryptionService.Setup(x => x.VerifyData(USER.Password, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
 			var token = _sut.AuthenticateUserGetTokens(USER.Id, USER.User.Email, USER.Password);
 
-			_userService.Setup(x => x.UserExists("newEmail")).Returns(true);
+			_userService.Setup(x => x.UserExistsEmail("newEmail")).Returns(true);
 
 			//Act
 			var validator = await _sut.ChangeUserEmail(USER.Id, "newEmail", token);
@@ -540,7 +542,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 
 			_userService.Setup(x => x.GetFullAccessingUserById(It.IsAny<string>())).Returns(() => null);			
 
-			_userService.Setup(x => x.UserExists("newEmail")).Returns(false);
+			_userService.Setup(x => x.UserExistsEmail("newEmail")).Returns(false);
 
 			//Act
 			var validator = await _sut.ChangeUserEmail(USER.Id, "newEmail", token);
@@ -562,7 +564,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 
 			_userService.Setup(x => x.GetFullAccessingUserById(It.IsAny<string>())).Returns(USER);
 
-			_userService.Setup(x => x.UserExists("newEmail")).Returns(false);
+			_userService.Setup(x => x.UserExistsEmail("newEmail")).Returns(false);
 
 			//Act
 			var validator = await _sut.ChangeUserEmail(USER.Id, "newEmail", token);
@@ -584,7 +586,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 
 			_userService.Setup(x => x.GetFullAccessingUserById(It.IsAny<string>())).Returns(USER);
 
-			_userService.Setup(x => x.UserExists("newEmail")).Returns(false);
+			_userService.Setup(x => x.UserExistsEmail("newEmail")).Returns(false);
 
 			//Act
 			var validator = await _sut.ChangeUserEmail(USER.Id, "newEmail", token);
@@ -606,7 +608,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 
 			_userService.Setup(x => x.GetFullAccessingUserById(It.IsAny<string>())).Returns(USER);
 
-			_userService.Setup(x => x.UserExists("newEmail")).Returns(false);
+			_userService.Setup(x => x.UserExistsEmail("newEmail")).Returns(false);
 
 			//Act
 			var validator = await _sut.ChangeUserEmail(USER.Id, "newEmail", token);

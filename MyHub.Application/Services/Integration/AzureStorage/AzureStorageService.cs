@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using MyHub.Domain.ConfigurationOptions.Storage;
 using MyHub.Domain.Integration.AzureDevOps.AzureStorage;
 using MyHub.Domain.Integration.AzureDevOps.AzureStorage.Interfaces;
+using System.IO;
 
 namespace MyHub.Application.Services.Integration.AzureStorage
 {

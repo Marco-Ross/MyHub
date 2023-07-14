@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using MyHub.Application.Services.Users;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
+using MyHub.Domain.Images.Interfaces;
 using MyHub.Domain.Integration.AzureDevOps.AzureStorage.Interfaces;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
@@ -17,7 +19,10 @@ namespace MyHub.Application.Tests.Services.Users
 		private readonly Mock<IEncryptionService> _encryptionService = new();
 		private readonly Mock<IAzureStorageService> _azureStorageService = new();
 		private readonly Mock<IUsersCacheService> _usersCacheService = new();
+		private readonly Mock<IUserGalleryService> _userGalleryService = new();
 		private readonly AccessingUser USER;
+		private readonly Mock<IMemoryCache> _memoryCache = new();
+		private readonly Mock<IImageService> _imageService = new();
 
 		public UserServiceTests()
 		{
@@ -25,7 +30,7 @@ namespace MyHub.Application.Tests.Services.Users
 			_applicationDbContext.Database.EnsureDeleted();
 
 			USER = new AccessingUser { Id = "TestUserId", User = new User { Id = "TestUserId", Email = "Test@Email.com", Username = "TestUser", Theme = "system-theme" }, Password = "TestPassword" };
-			_userService = new UsersService(_applicationDbContext, _encryptionService.Object, _azureStorageService.Object, _usersCacheService.Object);
+			_userService = new UsersService(_applicationDbContext, _encryptionService.Object, _azureStorageService.Object, _usersCacheService.Object, _userGalleryService.Object, _memoryCache.Object, _imageService.Object);
 		}
 
 		[Fact]

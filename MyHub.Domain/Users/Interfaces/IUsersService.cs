@@ -7,7 +7,10 @@ namespace MyHub.Domain.Users.Interfaces
 		AccessingUser RegisterUserDetails(AccessingUser newUser, string registerToken);
 		AccessingUser? RevokeUser(string userId, string refreshToken);
 		AccessingUser? RevokeUser(AccessingUser user, string refreshToken);
-		bool UserExists(string email);
+		bool UserExistsEmail(string email);
+		bool UserExistsId(string id);
+		User? GetUserById(string id);
+		User? GetUserByEmail(string email);
 		AccessingUser? GetFullAccessingUserByEmail(string username);
 		AccessingUser? GetFullAccessingUserById(string userId);
 		void AddRefreshToken(AccessingUser authenticatingUser, string refreshToken);
