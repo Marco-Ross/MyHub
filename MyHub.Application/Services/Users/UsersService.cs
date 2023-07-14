@@ -1,13 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using MyHub.Application.Extensions;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Enums.Enumerations;
+using MyHub.Domain.Images.Interfaces;
 using MyHub.Domain.Integration.AzureDevOps.AzureStorage;
 using MyHub.Domain.Integration.AzureDevOps.AzureStorage.Interfaces;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Domain.Validation;
+using MyHub.Infrastructure.Cache;
 using MyHub.Infrastructure.Repository.EntityFramework;
 
 namespace MyHub.Application.Services.Users
@@ -18,15 +21,22 @@ namespace MyHub.Application.Services.Users
 		private readonly IEncryptionService _encryptionService;
 		private readonly IAzureStorageService _azureStorageService;
 		private readonly IUsersCacheService _usersCacheService;
+		private readonly IUserGalleryService _userGalleryService;
+		private readonly IMemoryCache _memoryCache;
+		private readonly IImageService _imageService;
 
 		public UsersService(ApplicationDbContext applicationDbContext, IEncryptionService encryptionService,
-			IAzureStorageService azureStorageService, IUsersCacheService usersCacheService)
+			IAzureStorageService azureStorageService, IUsersCacheService usersCacheService, IUserGalleryService userGalleryService,
+			IMemoryCache memoryCache, IImageService imageService)
 		{
 			_applicationDbContext = applicationDbContext;
 			_encryptionService = encryptionService;
 			_azureStorageService = azureStorageService;
 			_usersCacheService = usersCacheService;
 			_usersCacheService = usersCacheService;
+			_userGalleryService = userGalleryService;
+			_memoryCache = memoryCache;
+			_imageService = imageService;
 		}
 
 		public AccessingUser RegisterUserDetails(AccessingUser newUser, string registerToken)
@@ -180,7 +190,8 @@ namespace MyHub.Application.Services.Users
 			_applicationDbContext.SaveChanges();
 		}
 
-		public bool UserExists(string email) => _applicationDbContext.Users.Any(x => x.Email == email);
+		public bool UserExistsEmail(string email) => _applicationDbContext.Users.Any(x => x.Email == email);
+		public bool UserExistsId(string id) => _applicationDbContext.Users.Any(x => x.Id == id);
 
 		public AccessingUser? GetFullAccessingUserByEmail(string email)
 		{
@@ -189,7 +200,8 @@ namespace MyHub.Application.Services.Users
 		}
 
 		public AccessingUser? GetFullAccessingUserById(string id) => _applicationDbContext.AccessingUsers.Include(x => x.User).Include(x => x.RefreshTokens).Include(x => x.ThirdPartyDetails).SingleOrDefault(x => x.Id == id);
-		public User? GetUserById(string id) => _applicationDbContext.Users.SingleOrDefault(x => x.Id == id);
+		public User? GetUserById(string id) => _applicationDbContext.Users.Include(x => x.GalleryImages).Include(x => x.LikedImages).SingleOrDefault(x => x.Id == id);
+		public User? GetUserByEmail(string email) => _applicationDbContext.Users.Include(x => x.GalleryImages).Include(x => x.LikedImages).SingleOrDefault(x => x.Email == email);
 
 		public void AddRefreshToken(AccessingUser authenticatingUser, string refreshToken)
 		{
@@ -220,14 +232,10 @@ namespace MyHub.Application.Services.Users
 		}
 
 		public async Task<bool> UpdateUserProfileImage(string userId, string image)
-		{
-			var profileImage = image[(image.LastIndexOf(',') + 1)..];
-
-			return await _azureStorageService.UploadFileToStorage(profileImage.ToMemoryStream(), GetProfileImageStorageOptions(userId));
-		}
+			=> await _azureStorageService.UploadFileToStorage(_imageService.CompressPng(image.ToMemoryStream()), GetProfileImageStorageOptions(userId));
 
 		public async Task<bool> UpdateUserProfileImage(string userId, Stream? image)
-			=> await _azureStorageService.UploadFileToStorage(image, GetProfileImageStorageOptions(userId));
+			=> await _azureStorageService.UploadFileToStorage(image is not null ? _imageService.CompressPng(image) : image, GetProfileImageStorageOptions(userId));
 
 		public async Task<Stream?> GetUserProfileImage(string userId)
 			=> await _azureStorageService.GetFileFromStorage(GetProfileImageStorageOptions(userId));
@@ -284,9 +292,13 @@ namespace MyHub.Application.Services.Users
 
 			if (user is null) return;
 
+			await _userGalleryService.RemoveUserImages(userId);
+
 			_applicationDbContext.Remove(user);
 
 			await DeleteUserProfileImage(userId);
+
+			_memoryCache.Remove(CacheKeys.MarcoId);
 
 			_applicationDbContext.SaveChanges();
 		}

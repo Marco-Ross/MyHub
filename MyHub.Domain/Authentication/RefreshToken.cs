@@ -11,7 +11,7 @@ namespace MyHub.Domain.Authentication
 		public string Token { get; set; } = string.Empty;
 		public DateTime CreatedDate { get; set; }
 
-		[ForeignKey(nameof(AccessingUser))]
+		[ForeignKey("User")]
 		public string UserId { get; set; } = string.Empty;
 		public AccessingUser User { get; set; } = new AccessingUser();
 	}
