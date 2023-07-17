@@ -58,6 +58,13 @@ namespace MyHub.Controllers
 		}
 
 		[AllowAnonymous]
+		[HttpGet("IsAdmin")]
+		public IActionResult GetIsAdmin()
+		{
+			return Ok(new { IsAdmin });
+		}
+
+		[AllowAnonymous]
 		[HttpPost("Register")]
 		public async Task<IActionResult> Register(RegisterUserDto userDto)
 		{

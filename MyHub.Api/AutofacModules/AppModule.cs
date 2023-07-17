@@ -1,7 +1,10 @@
 ﻿using Autofac;
+using Autofac.Core;
 using AutoMapper.Contrib.Autofac.DependencyInjection;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using MyHub.Api.Authorization;
 using MyHub.Api.AutofacModules.Factories;
 using MyHub.Api.Filters;
 using MyHub.Application;
