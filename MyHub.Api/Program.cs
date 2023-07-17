@@ -27,6 +27,9 @@ using MyHub.Infrastructure.Repository.EntityFramework;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Threading.RateLimiting;
+using MyHub.Domain.Enums.Enumerations;
+using MyHub.Api.Authorization;
+using Microsoft.AspNetCore.Authorization;
 
 const string AllowedCorsOrigins = "_corsOrigins";
 const string SlidingPolicy = "sliding";
@@ -105,7 +108,13 @@ JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
 
 //builder.Services.AddResponseCaching; //has to be after AddCors
-builder.Services.AddAuthorization();
+//builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+	options.AddPolicy("AdminOnly", policy => policy.Requirements.Add(new HasClaimAuthorizationRequirement(CustomJwtClaimNames.IsAdmin.Id)));
+});
+
+builder.Services.AddSingleton<IAuthorizationHandler, HasClaimAuthorizationHandler>();
 
 builder.Services.AddControllers(config =>
 {

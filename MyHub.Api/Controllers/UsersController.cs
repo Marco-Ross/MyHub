@@ -66,6 +66,7 @@ namespace MyHub.Api.Controllers
 			return Ok(new { Theme = _userService.GetUserTheme(UserId) });
 		}
 
+		[AllowAnonymous]
 		[HttpGet("ProfileImage/{userId}")]
 		public async Task<IActionResult> GetProfileImage(string userId)
 		{

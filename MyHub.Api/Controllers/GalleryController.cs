@@ -8,7 +8,6 @@ using MyHub.Domain.Users.Interfaces;
 
 namespace MyHub.Api.Controllers
 {
-	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
 	public class GalleryController : BaseController
@@ -25,18 +24,10 @@ namespace MyHub.Api.Controllers
 			_adminService = adminService;
 		}
 
-		[HttpGet("IsAdmin")]
-		public IActionResult GetIsAdmin()
-		{
-			return Ok(new { IsAdmin });
-		}
-
+		[Authorize(Policy = "AdminOnly")]
 		[HttpPost]
 		public async Task<IActionResult> UploadImage(UploadGalleryImageDto uploadGalleryImageDto)
 		{
-			if (!IsAdmin)
-				return BadRequest("This user cannot upload images.");
-
 			var galleryImage = await _galleryService.UploadImage(_adminService.GetMarcoId(), uploadGalleryImageDto.Image, uploadGalleryImageDto.Caption);
 
 			if (galleryImage is null)
@@ -78,6 +69,7 @@ namespace MyHub.Api.Controllers
 			return File(image, "image/png");
 		}
 
+		[Authorize(Policy = "AdminOnly")]
 		[HttpDelete("{imageId}")]
 		public async Task<IActionResult> DeleteImage(string imageId)
 		{
@@ -92,6 +84,7 @@ namespace MyHub.Api.Controllers
 			return Ok();
 		}
 
+		[Authorize]
 		[HttpPost("Like")]
 		public IActionResult LikeImage(LikeImageDto likeImageDto)
 		{
@@ -103,6 +96,7 @@ namespace MyHub.Api.Controllers
 			return Ok();
 		}
 
+		[Authorize]
 		[HttpPost("Unlike")]
 		public IActionResult UnlikeImage(UnlikeImageDto likeImageDto)
 		{
@@ -114,6 +108,7 @@ namespace MyHub.Api.Controllers
 			return Ok();
 		}
 
+		[Authorize]
 		[HttpPost("Comment")]
 		public IActionResult PostComment(CommentDto commentDto)
 		{
@@ -126,7 +121,7 @@ namespace MyHub.Api.Controllers
 		}
 
 		[HttpGet("Comments/{imageId}")]
-		public IActionResult PostComment(string imageId)
+		public IActionResult GetComment(string imageId)
 		{
 			var comments = _galleryService.GetImageComments(imageId);
 
