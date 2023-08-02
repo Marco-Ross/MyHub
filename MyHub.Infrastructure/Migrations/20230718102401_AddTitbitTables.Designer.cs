@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyHub.Infrastructure.Repository.EntityFramework;
 
@@ -11,9 +12,11 @@ using MyHub.Infrastructure.Repository.EntityFramework;
 namespace MyHub.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230718102401_AddTitbitTables")]
+    partial class AddTitbitTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -24,15 +27,15 @@ namespace MyHub.Infrastructure.Migrations
 
             modelBuilder.Entity("GalleryImageUser", b =>
                 {
-                    b.Property<string>("LikedGalleryImagesId")
+                    b.Property<string>("LikedImagesId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("LikedGalleryUsersId")
+                    b.Property<string>("LikedUsersId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.HasKey("LikedGalleryImagesId", "LikedGalleryUsersId");
+                    b.HasKey("LikedImagesId", "LikedUsersId");
 
-                    b.HasIndex("LikedGalleryUsersId");
+                    b.HasIndex("LikedUsersId");
 
                     b.ToTable("GalleryImageUser");
                 });
@@ -167,9 +170,6 @@ namespace MyHub.Infrastructure.Migrations
                     b.Property<string>("CategoryId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<DateTime>("DateUpdated")
-                        .HasColumnType("datetime2");
-
                     b.Property<DateTime>("DateUploaded")
                         .HasColumnType("datetime2");
 
@@ -184,16 +184,11 @@ namespace MyHub.Infrastructure.Migrations
                     b.Property<string>("UserCreatedId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("UserUpdatedId")
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("UserCreatedId");
-
-                    b.HasIndex("UserUpdatedId");
 
                     b.ToTable("Titbits");
                 });
@@ -202,9 +197,6 @@ namespace MyHub.Infrastructure.Migrations
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("DateUploaded")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -346,21 +338,6 @@ namespace MyHub.Infrastructure.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("TitbitUser", b =>
-                {
-                    b.Property<string>("LikedTitbitUsersId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("LikedTitbitsId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("LikedTitbitUsersId", "LikedTitbitsId");
-
-                    b.HasIndex("LikedTitbitsId");
-
-                    b.ToTable("TitbitUser");
-                });
-
             modelBuilder.Entity("MyHub.Domain.Emails.AccountRegisterEmail", b =>
                 {
                     b.HasBaseType("MyHub.Domain.Emails.Email");
@@ -379,13 +356,13 @@ namespace MyHub.Infrastructure.Migrations
                 {
                     b.HasOne("MyHub.Domain.Gallery.GalleryImage", null)
                         .WithMany()
-                        .HasForeignKey("LikedGalleryImagesId")
+                        .HasForeignKey("LikedImagesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("MyHub.Domain.Users.User", null)
                         .WithMany()
-                        .HasForeignKey("LikedGalleryUsersId")
+                        .HasForeignKey("LikedUsersId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -447,18 +424,12 @@ namespace MyHub.Infrastructure.Migrations
                         .HasForeignKey("CategoryId");
 
                     b.HasOne("MyHub.Domain.Users.User", "UserCreated")
-                        .WithMany("Titbits")
+                        .WithMany()
                         .HasForeignKey("UserCreatedId");
-
-                    b.HasOne("MyHub.Domain.Users.User", "UserUpdated")
-                        .WithMany("TitbitsUpdated")
-                        .HasForeignKey("UserUpdatedId");
 
                     b.Navigation("TitbitCategory");
 
                     b.Navigation("UserCreated");
-
-                    b.Navigation("UserUpdated");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Titbits.TitbitLink", b =>
@@ -492,21 +463,6 @@ namespace MyHub.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("AccessingUser");
-                });
-
-            modelBuilder.Entity("TitbitUser", b =>
-                {
-                    b.HasOne("MyHub.Domain.Users.User", null)
-                        .WithMany()
-                        .HasForeignKey("LikedTitbitUsersId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MyHub.Domain.Titbits.Titbit", null)
-                        .WithMany()
-                        .HasForeignKey("LikedTitbitsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("MyHub.Domain.Emails.AccountRegisterEmail", b =>
@@ -553,10 +509,6 @@ namespace MyHub.Infrastructure.Migrations
             modelBuilder.Entity("MyHub.Domain.Users.User", b =>
                 {
                     b.Navigation("GalleryImages");
-
-                    b.Navigation("Titbits");
-
-                    b.Navigation("TitbitsUpdated");
                 });
 #pragma warning restore 612, 618
         }

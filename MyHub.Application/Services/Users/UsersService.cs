@@ -200,8 +200,8 @@ namespace MyHub.Application.Services.Users
 		}
 
 		public AccessingUser? GetFullAccessingUserById(string id) => _applicationDbContext.AccessingUsers.Include(x => x.User).Include(x => x.RefreshTokens).Include(x => x.ThirdPartyDetails).SingleOrDefault(x => x.Id == id);
-		public User? GetUserById(string id) => _applicationDbContext.Users.Include(x => x.GalleryImages).Include(x => x.LikedImages).SingleOrDefault(x => x.Id == id);
-		public User? GetUserByEmail(string email) => _applicationDbContext.Users.Include(x => x.GalleryImages).Include(x => x.LikedImages).SingleOrDefault(x => x.Email == email);
+		public User? GetUserById(string id) => _applicationDbContext.Users.Include(x => x.GalleryImages).Include(x => x.LikedGalleryImages).SingleOrDefault(x => x.Id == id);
+		public User? GetUserByEmail(string email) => _applicationDbContext.Users.Include(x => x.GalleryImages).Include(x => x.LikedGalleryImages).SingleOrDefault(x => x.Email == email);
 
 		public void AddRefreshToken(AccessingUser authenticatingUser, string refreshToken)
 		{

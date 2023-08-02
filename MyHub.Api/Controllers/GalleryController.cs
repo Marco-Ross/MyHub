@@ -16,7 +16,6 @@ namespace MyHub.Api.Controllers
 		private readonly IGalleryService _galleryService;
 		private readonly IMarcoService _adminService;
 
-
 		public GalleryController(IGalleryService galleryService, IMapper mapper, IMarcoService adminService)
 		{
 			_galleryService = galleryService;
@@ -98,9 +97,9 @@ namespace MyHub.Api.Controllers
 
 		[Authorize]
 		[HttpPost("Unlike")]
-		public IActionResult UnlikeImage(UnlikeImageDto likeImageDto)
+		public IActionResult UnlikeImage(UnlikeImageDto unlikeImageDto)
 		{
-			var imageLiked = _galleryService.UnlikeImage(UserId, likeImageDto.ImageId);
+			var imageLiked = _galleryService.UnlikeImage(UserId, unlikeImageDto.ImageId);
 
 			if (!imageLiked)
 				return BadRequest("Image already unliked.");
