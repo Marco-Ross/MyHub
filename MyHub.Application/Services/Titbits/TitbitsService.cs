@@ -178,7 +178,7 @@ namespace MyHub.Application.Services.Titbits
 			existingTitbit.Description = titbit.Description;
 			existingTitbit.CategoryId = titbit.CategoryId;
 			existingTitbit.UserUpdated = user;
-			existingTitbit.DateUploaded = DateTime.Now;
+			existingTitbit.DateUpdated = DateTime.Now;
 			existingTitbit.TitbitLinks = titbit.TitbitLinks;
 
 			foreach (var link in existingTitbit.TitbitLinks)
