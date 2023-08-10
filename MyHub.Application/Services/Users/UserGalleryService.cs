@@ -1,4 +1,5 @@
-﻿using MyHub.Domain.Enums.Enumerations;
+﻿using MyHub.Application.Extensions;
+using MyHub.Domain.Enums.Enumerations;
 using MyHub.Domain.Gallery;
 using MyHub.Domain.Integration.AzureDevOps.AzureStorage;
 using MyHub.Domain.Integration.AzureDevOps.AzureStorage.Interfaces;
@@ -43,7 +44,7 @@ namespace MyHub.Application.Services.Users
 		public AzureStorageOptions GetGalleryImageStorageOptions(string fileName) => new()
 		{
 			StorageFolder = StorageFolder.GalleryImages,
-			FileName = $"{fileName}.png",
+			FileName = fileName.AsPng(),
 			OverWrite = true
 		};
 	}

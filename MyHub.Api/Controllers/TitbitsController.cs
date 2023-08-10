@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyHub.Api.Authorization;
 using MyHub.Domain.DtoMappingProfiles.Gallery;
-using MyHub.Domain.Gallery.GalleryDto;
 using MyHub.Domain.Titbits;
 using MyHub.Domain.Titbits.Interfaces;
 using MyHub.Domain.Titbits.TitbitsDto;
@@ -61,6 +61,7 @@ namespace MyHub.Api.Controllers
 			return Ok();
 		}
 
+		[AuthorizeLoggedIn]
 		[HttpGet]
 		public IActionResult GetTitbits()
 		{

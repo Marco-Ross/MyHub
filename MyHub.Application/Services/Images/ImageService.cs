@@ -30,6 +30,8 @@ namespace MyHub.Application.Services.Images
 
 		public Stream CompressPng(Stream imageInput)
 		{
+			imageInput.Seek(0, SeekOrigin.Begin);
+
 			using var image = Image.Load(imageInput);
 
 			var memoryStream = new MemoryStream();
