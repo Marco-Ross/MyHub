@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyHub.Api.Authorization;
 using MyHub.Domain.DtoMappingProfiles.Gallery;
 using MyHub.Domain.Gallery.GalleryDto;
 using MyHub.Domain.Gallery.Interfaces;
@@ -35,6 +36,7 @@ namespace MyHub.Api.Controllers
 			return Ok(_mapper.Map<UserGalleryDto>(galleryImage));
 		}
 
+		[AuthorizeLoggedIn]
 		[HttpGet]
 		public IActionResult GetImages()
 		{
@@ -46,6 +48,7 @@ namespace MyHub.Api.Controllers
 			return Ok(new { Images = _mapper.Map<List<UserGalleryDto>>(usersGallery, opt => opt.Items[GalleryContextOptions.UserId] = UserId) });
 		}
 
+		[AuthorizeLoggedIn]
 		[HttpGet("ImageData/{imageId}")]
 		public IActionResult GetImageData(string imageId)
 		{

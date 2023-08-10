@@ -122,7 +122,10 @@ namespace MyHub.Application.Services.Authentication
 					RefreshTokens = new List<RefreshToken> { new RefreshToken { Id = Guid.NewGuid().ToString(), Token = hubTokens.RefreshToken, CreatedDate = DateTime.Now } }
 				};
 
-				var uploaded = await _usersService.UpdateUserProfileImage(user.User.Id, await _githubUsersService.GetUserProfileImage(githubUser.AvatarUrl));
+				var uploaded = true;
+
+				if (string.IsNullOrWhiteSpace(githubUser.AvatarUrl))
+					uploaded = await _usersService.UpdateUserProfileImage(user.User.Id, await _githubUsersService.GetUserProfileImage(githubUser.AvatarUrl));
 
 				if (uploaded)
 					_usersService.RegisterThirdParty(user);

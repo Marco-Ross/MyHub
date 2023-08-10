@@ -243,7 +243,7 @@ namespace MyHub.Application.Services.Users
 		public async Task<bool> DeleteUserProfileImage(string userId)
 			=> await _azureStorageService.RemoveFile(GetProfileImageStorageOptions(userId));
 
-		private static string GetUserProfileImageName(string userId) => $"{userId}.png";
+		private static string GetUserProfileImageName(string userId) => userId.AsPng();
 
 		private static AzureStorageOptions GetProfileImageStorageOptions(string userId) => new()
 		{
@@ -294,7 +294,9 @@ namespace MyHub.Application.Services.Users
 
 			await _userGalleryService.RemoveUserImages(userId);
 
-			_applicationDbContext.Remove(user);
+			var userToRemove = _applicationDbContext.Users.Include(x => x.Titbits).Include(x => x.TitbitsUpdated).Single(x=> x.Id == userId);
+
+			_applicationDbContext.Users.Remove(userToRemove);
 
 			await DeleteUserProfileImage(userId);
 

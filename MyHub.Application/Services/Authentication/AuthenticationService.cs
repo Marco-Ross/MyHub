@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using FluentValidation;
+using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MyHub.Application.Helpers.JwtHelpers;
@@ -240,7 +241,7 @@ namespace MyHub.Application.Services.Authentication
 				Audience = claims.Aud,
 				Issuer = claims.Iss,
 				Subject = new ClaimsIdentity(ClaimsHelper.CreateClaims(claims)),
-				Expires = DateTime.UtcNow.AddMinutes(15),
+				Expires = DateTime.UtcNow.AddMinutes(_authOptions.JWT.Expiry),
 				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey), SecurityAlgorithms.HmacSha256Signature)
 			};
 

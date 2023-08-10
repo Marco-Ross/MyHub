@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using MyHub.Api.Authorization;
 using MyHub.Api.Controllers;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
@@ -58,6 +59,7 @@ namespace MyHub.Controllers
 		}
 
 		[AllowAnonymous]
+		[AuthorizeLoggedIn]
 		[HttpGet("IsAdmin")]
 		public IActionResult GetIsAdmin()
 		{
@@ -142,7 +144,7 @@ namespace MyHub.Controllers
 
 			return Ok();
 		}
-		
+
 		[HttpPost("LoginToContinue")]
 		public IActionResult LoginToContinue(LoginUserDto userDto)
 		{

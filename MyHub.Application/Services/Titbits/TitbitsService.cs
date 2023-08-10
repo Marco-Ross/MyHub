@@ -40,7 +40,7 @@ namespace MyHub.Application.Services.Titbits
 
 			_applicationDbContext.SaveChanges();
 
-			return addedTitbit.Entity;
+			return _applicationDbContext.Titbits.Include(x => x.TitbitLinks).Include(x => x.TitbitCategory).Single(x => x.Id == titbit.Id);
 		}
 
 		public List<TitbitCategory> AddNewTitbitCategories(List<TitbitCategory> categories)
