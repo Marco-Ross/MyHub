@@ -124,7 +124,7 @@ namespace MyHub.Application.Services.Authentication
 
 				var uploaded = true;
 
-				if (string.IsNullOrWhiteSpace(githubUser.AvatarUrl))
+				if (!string.IsNullOrWhiteSpace(githubUser.AvatarUrl))
 					uploaded = await _usersService.UpdateUserProfileImage(user.User.Id, await _githubUsersService.GetUserProfileImage(githubUser.AvatarUrl));
 
 				if (uploaded)

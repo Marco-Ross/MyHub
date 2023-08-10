@@ -157,7 +157,7 @@ namespace MyHub.Application.Services.Authentication
 
 				var uploaded = true;
 
-				if (string.IsNullOrWhiteSpace(payload.Picture))
+				if (!string.IsNullOrWhiteSpace(payload.Picture))
 					uploaded = await _usersService.UpdateUserProfileImage(user.User.Id, await _googleUsersService.GetUserProfileImage(payload.Picture));
 
 				if (uploaded)
