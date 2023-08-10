@@ -84,7 +84,7 @@ namespace MyHub.Application.Services.Gallery
 
 				if(galleryImage is null) return false;
 
-				galleryImage.LikedUsers.Add(currentUser);
+				galleryImage.LikedGalleryUsers.Add(currentUser);
 
 				_applicationDbContext.SaveChanges();
 
@@ -109,7 +109,7 @@ namespace MyHub.Application.Services.Gallery
 
 				if (galleryImage is null) return false;
 
-				galleryImage.LikedUsers.Remove(currentUser);
+				galleryImage.LikedGalleryUsers.Remove(currentUser);
 
 				_applicationDbContext.SaveChanges();
 
@@ -123,12 +123,12 @@ namespace MyHub.Application.Services.Gallery
 
 		public IEnumerable<GalleryImage> GetUserImages(string userId)
 		{
-			return _applicationDbContext.GalleryImages.Include(x => x.LikedUsers).Include(x => x.GalleryImageComments).OrderByDescending(x => x.DateUploaded).Where(x => x.UserCreatedId == userId);
+			return _applicationDbContext.GalleryImages.Include(x => x.LikedGalleryUsers.Take(2)).Include(x => x.GalleryImageComments).OrderByDescending(x => x.DateUploaded).Where(x => x.UserCreatedId == userId);
 		}
 		
 		public GalleryImage? GetImageData(string imageId)
 		{
-			return _applicationDbContext.GalleryImages.Include(x => x.LikedUsers).Include(x => x.GalleryImageComments.OrderByDescending(x => x.CommentDate)).ThenInclude(c => c.User).SingleOrDefault(x => x.Id == imageId);
+			return _applicationDbContext.GalleryImages.Include(x => x.LikedGalleryUsers.Take(2)).Include(x => x.GalleryImageComments.OrderByDescending(x => x.CommentDate)).ThenInclude(c => c.User).SingleOrDefault(x => x.Id == imageId);
 		}
 
 		public GalleryImageComment? PostCommentToImage(string currentUserId, string imageId, string comment)

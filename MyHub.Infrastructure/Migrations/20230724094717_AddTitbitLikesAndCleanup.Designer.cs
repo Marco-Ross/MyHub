@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyHub.Infrastructure.Repository.EntityFramework;
 
@@ -11,9 +12,11 @@ using MyHub.Infrastructure.Repository.EntityFramework;
 namespace MyHub.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230724094717_AddTitbitLikesAndCleanup")]
+    partial class AddTitbitLikesAndCleanup
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -167,9 +170,6 @@ namespace MyHub.Infrastructure.Migrations
                     b.Property<string>("CategoryId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<DateTime>("DateUpdated")
-                        .HasColumnType("datetime2");
-
                     b.Property<DateTime>("DateUploaded")
                         .HasColumnType("datetime2");
 
@@ -184,16 +184,11 @@ namespace MyHub.Infrastructure.Migrations
                     b.Property<string>("UserCreatedId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("UserUpdatedId")
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("UserCreatedId");
-
-                    b.HasIndex("UserUpdatedId");
 
                     b.ToTable("Titbits");
                 });
@@ -450,15 +445,9 @@ namespace MyHub.Infrastructure.Migrations
                         .WithMany("Titbits")
                         .HasForeignKey("UserCreatedId");
 
-                    b.HasOne("MyHub.Domain.Users.User", "UserUpdated")
-                        .WithMany("TitbitsUpdated")
-                        .HasForeignKey("UserUpdatedId");
-
                     b.Navigation("TitbitCategory");
 
                     b.Navigation("UserCreated");
-
-                    b.Navigation("UserUpdated");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Titbits.TitbitLink", b =>
@@ -555,8 +544,6 @@ namespace MyHub.Infrastructure.Migrations
                     b.Navigation("GalleryImages");
 
                     b.Navigation("Titbits");
-
-                    b.Navigation("TitbitsUpdated");
                 });
 #pragma warning restore 612, 618
         }

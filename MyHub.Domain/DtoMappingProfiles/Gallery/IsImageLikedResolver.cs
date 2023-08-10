@@ -8,7 +8,7 @@ namespace MyHub.Domain.DtoMappingProfiles.Gallery
 	{
 		public bool Resolve(GalleryImage source, UserGalleryDto destination, bool destMember, ResolutionContext context)
 		{
-			return source.LikedUsers.Any(x => x.Id == context.Items[GalleryContextOptions.UserId]?.ToString());
+			return source.LikedGalleryUsers.Any(x => x.Id == context.Items[GalleryContextOptions.UserId]?.ToString());
 		}
 	}
 }

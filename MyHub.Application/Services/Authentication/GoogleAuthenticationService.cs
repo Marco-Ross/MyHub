@@ -14,6 +14,7 @@ using MyHub.Domain.Enums.Enumerations;
 using Google.Apis.Util;
 using MyHub.Domain.Authentication.Claims;
 using MyHub.Domain.Authentication.Interfaces;
+using MyHub.Domain.Users.Github;
 
 namespace MyHub.Application.Services.Authentication
 {
@@ -154,7 +155,10 @@ namespace MyHub.Application.Services.Authentication
 					RefreshTokens = new List<RefreshToken> { new RefreshToken { Id = Guid.NewGuid().ToString(), Token = tokens.RefreshToken, CreatedDate = DateTime.Now } }
 				};
 
-				var uploaded = await _usersService.UpdateUserProfileImage(user.User.Id, await _googleUsersService.GetUserProfileImage(payload.Picture));
+				var uploaded = true;
+
+				if (!string.IsNullOrWhiteSpace(payload.Picture))
+					uploaded = await _usersService.UpdateUserProfileImage(user.User.Id, await _googleUsersService.GetUserProfileImage(payload.Picture));
 
 				if (uploaded)
 					_usersService.RegisterThirdParty(user);

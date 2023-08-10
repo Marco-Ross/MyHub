@@ -28,7 +28,7 @@ namespace MyHub.Application.Services.Emails
 
 		private void SaveEmail(Email email)
 		{
-			_applicationDbContext.Add(email);
+			_applicationDbContext.Emails.Add(email);
 			_applicationDbContext.SaveChanges();
 		}
 	}

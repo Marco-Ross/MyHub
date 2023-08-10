@@ -8,7 +8,7 @@ namespace MyHub.Domain.DtoMappingProfiles.Gallery
 	{
 		public List<LikedUsersDto> Resolve(GalleryImage source, UserGalleryDto destination, List<LikedUsersDto> destMember, ResolutionContext context)
 		{
-			var likedUsersDto = source.LikedUsers.Select(x => new LikedUsersDto { Id = x.Id, Username = x.Username }).ToList();
+			var likedUsersDto = source.LikedGalleryUsers.Select(x => new LikedUsersDto { Id = x.Id, Username = x.Username }).ToList();
 
 			return ChangeCurrentUserIfLikes(context, likedUsersDto);
 		}

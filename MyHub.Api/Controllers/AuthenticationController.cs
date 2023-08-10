@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using MyHub.Api.Authorization;
 using MyHub.Api.Controllers;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Authentication.Interfaces;
@@ -55,6 +56,14 @@ namespace MyHub.Controllers
 			Response.Cookies.Delete(AuthConstants.RefreshToken, cookieDomainOptions);
 			Response.Cookies.Delete(AuthConstants.LoggedIn, cookieDomainOptions);
 			Response.Cookies.Delete(AuthConstants.ForgeryToken, cookieDomainOptions);
+		}
+
+		[AllowAnonymous]
+		[AuthorizeLoggedIn]
+		[HttpGet("IsAdmin")]
+		public IActionResult GetIsAdmin()
+		{
+			return Ok(new { IsAdmin });
 		}
 
 		[AllowAnonymous]
@@ -135,7 +144,7 @@ namespace MyHub.Controllers
 
 			return Ok();
 		}
-		
+
 		[HttpPost("LoginToContinue")]
 		public IActionResult LoginToContinue(LoginUserDto userDto)
 		{

@@ -17,9 +17,9 @@ namespace MyHub.Domain.Gallery
 		public DateTime DateUploaded { get; set; }
 		public ICollection<GalleryImageComment> GalleryImageComments { get; set; } = new List<GalleryImageComment>();
 
-		[InverseProperty("LikedImages")]
-		public ICollection<User> LikedUsers { get; set; } = new List<User>();
-		public int LikesCount => LikedUsers.Count;
+		[InverseProperty("LikedGalleryImages")]
+		public ICollection<User> LikedGalleryUsers { get; set; } = new List<User>();
+		public int LikesCount => LikedGalleryUsers.Count;
 		public int CommentsCount => GalleryImageComments.Count;
 
 		[Timestamp]

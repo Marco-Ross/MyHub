@@ -1,7 +1,10 @@
 ﻿using Autofac;
+using Autofac.Core;
 using AutoMapper.Contrib.Autofac.DependencyInjection;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using MyHub.Api.Authorization;
 using MyHub.Api.AutofacModules.Factories;
 using MyHub.Api.Filters;
 using MyHub.Application;
@@ -15,6 +18,7 @@ using MyHub.Application.Services.Gallery;
 using MyHub.Application.Services.Images;
 using MyHub.Application.Services.Integration.AzureDevOps;
 using MyHub.Application.Services.Integration.AzureStorage;
+using MyHub.Application.Services.Titbits;
 using MyHub.Application.Services.Users;
 using MyHub.Domain;
 using MyHub.Domain.Attachment.Interfaces;
@@ -29,6 +33,7 @@ using MyHub.Domain.Hubs.Interfaces;
 using MyHub.Domain.Images.Interfaces;
 using MyHub.Domain.Integration.AzureDevOps.AzureStorage.Interfaces;
 using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.Interfaces;
+using MyHub.Domain.Titbits.Interfaces;
 using MyHub.Domain.Users.Google;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Infrastructure.Repository.EntityFramework;
@@ -85,6 +90,7 @@ namespace MyHub.Api.AutofacModules
 			builder.RegisterType<AttachmentService>().As<IAttachmentService>().InstancePerLifetimeScope();
 			builder.RegisterType<UserGalleryService>().As<IUserGalleryService>().InstancePerLifetimeScope();
 			builder.RegisterType<MarcoService>().As<IMarcoService>().InstancePerLifetimeScope();
+			builder.RegisterType<TitbitsService>().As<ITitbitsService>().InstancePerLifetimeScope();
 			builder.Register<IGitHubClient>(c =>
 			{
 				var httpContextAccessor = c.Resolve<IHttpContextAccessor>();

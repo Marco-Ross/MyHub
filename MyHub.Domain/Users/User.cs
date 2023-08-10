@@ -1,4 +1,5 @@
 ﻿using MyHub.Domain.Gallery;
+using MyHub.Domain.Titbits;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -17,7 +18,16 @@ namespace MyHub.Domain.Users
 		[InverseProperty("UserCreated")]
 		public ICollection<GalleryImage> GalleryImages { get; set; } = new List<GalleryImage>();
 
-		[InverseProperty("LikedUsers")]
-		public ICollection<GalleryImage> LikedImages { get; set; } = new List<GalleryImage>();
+		[InverseProperty("UserCreated")]
+		public ICollection<Titbit> Titbits { get; set; } = new List<Titbit>();
+
+		[InverseProperty("UserUpdated")]
+		public ICollection<Titbit> TitbitsUpdated { get; set; } = new List<Titbit>();
+
+		[InverseProperty("LikedGalleryUsers")]
+		public ICollection<GalleryImage> LikedGalleryImages { get; set; } = new List<GalleryImage>();
+
+		[InverseProperty("LikedTitbitUsers")]
+		public ICollection<Titbit> LikedTitbits { get; set; } = new List<Titbit>();
 	}
 }
