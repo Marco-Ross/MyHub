@@ -12,7 +12,7 @@ namespace MyHub.Domain.Titbits
 		public string Description { get; set; } = string.Empty;
 
 		[ForeignKey("UserCreated")]
-		public string? UserCreatedId { get; set; } = string.Empty;
+		public string? UserCreatedId { get; set; }
 		public User? UserCreated { get; set; }
 
 		public ICollection<TitbitLink> TitbitLinks { get; set; } = new List<TitbitLink>();
@@ -23,7 +23,7 @@ namespace MyHub.Domain.Titbits
 		public DateTime DateUploaded { get; set; }
 
 		[ForeignKey("UserUpdated")]
-		public string? UserUpdatedId { get; set; } = string.Empty;
+		public string? UserUpdatedId { get; set; }
 		public User? UserUpdated { get; set; }
 
 		public DateTime DateUpdated { get; set; }

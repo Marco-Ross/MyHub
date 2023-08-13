@@ -3,7 +3,6 @@ using MyHub.Domain.Titbits;
 using MyHub.Domain.Titbits.Interfaces;
 using MyHub.Domain.Users.Interfaces;
 using MyHub.Infrastructure.Repository.EntityFramework;
-using System.Linq;
 
 namespace MyHub.Application.Services.Titbits
 {

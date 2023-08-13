@@ -14,7 +14,6 @@ using MyHub.Domain.Enums.Enumerations;
 using Google.Apis.Util;
 using MyHub.Domain.Authentication.Claims;
 using MyHub.Domain.Authentication.Interfaces;
-using MyHub.Domain.Users.Github;
 
 namespace MyHub.Application.Services.Authentication
 {
