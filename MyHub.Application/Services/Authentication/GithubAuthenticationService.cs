@@ -36,7 +36,7 @@ namespace MyHub.Application.Services.Authentication
 			{
 				Sub = githubUser.Id.ToString(),
 				Email = githubEmail.Email,
-				Name = githubUser.Name,
+				Name = githubUser.Login,
 				Iss = _authOptions.JWT.Issuer,
 				IssManaging = LoginIssuers.Github.Id,
 				Aud = _authOptions.JWT.Audience
@@ -84,7 +84,7 @@ namespace MyHub.Application.Services.Authentication
 			var githubUser = new GithubUser
 			{
 				Email = userEmail.Email,
-				Username = githubUserResponse.Name,
+				Username = githubUserResponse.Login,
 				IdToken = hubTokens.IdToken,
 				AccessToken = githubAccessResponse.AccessToken,
 				RefreshToken = hubTokens.RefreshToken,
