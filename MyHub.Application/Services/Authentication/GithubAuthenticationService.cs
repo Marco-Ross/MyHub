@@ -114,7 +114,7 @@ namespace MyHub.Application.Services.Authentication
 			{
 				var user = new AccessingUser
 				{
-					User = new Domain.Users.User { Id = githubUser.Id.ToString(), Email = githubEmail.Email, Username = githubUser.Name },
+					User = new Domain.Users.User { Id = githubUser.Id.ToString(), Email = githubEmail.Email, Username = githubUser.Login, Name = string.IsNullOrWhiteSpace(githubUser?.Name) ? "" : githubUser.Name },
 					ThirdPartyDetails = new ThirdPartyDetails
 					{
 						ThirdPartyIssuerId = LoginIssuers.Github.Id
@@ -124,7 +124,7 @@ namespace MyHub.Application.Services.Authentication
 
 				var uploaded = true;
 
-				if (!string.IsNullOrWhiteSpace(githubUser.AvatarUrl))
+				if (!string.IsNullOrWhiteSpace(githubUser?.AvatarUrl))
 					uploaded = await _usersService.UpdateUserProfileImage(user.User.Id, await _githubUsersService.GetUserProfileImage(githubUser.AvatarUrl));
 
 				if (uploaded)
