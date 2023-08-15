@@ -45,7 +45,7 @@ namespace MyHub.Api.Controllers.ThirdPartyLogin
 
 		private void SetCookieDetails(GithubUser githubUser)
 		{
-			var hubUserDto = new HubUserDto { Email = githubUser.Email, Username = githubUser.Username, LoginIssuer = LoginIssuers.Github.Id };
+			var hubUserDto = new HubUserDto { Email = githubUser.Email, Username = githubUser.Username + "test", LoginIssuer = LoginIssuers.Github.Id };
 
 			var httpOnlyCookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
 			Response.Cookies.Append(AuthConstants.IdToken, githubUser.IdToken, httpOnlyCookieOptions);
