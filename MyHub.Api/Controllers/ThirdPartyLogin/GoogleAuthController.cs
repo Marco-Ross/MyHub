@@ -13,48 +13,48 @@ using System.Text.Json;
 
 namespace MyHub.Api.Controllers.ThirdPartyLogin
 {
-    [Authorize]
-    [ApiController]
-    [Route("[controller]")]
-    public class GoogleAuthController : BaseController
-    {
-        private readonly IGoogleAuthenticationService _googleAuthService;
-        private readonly AuthenticationOptions _authOptions;
-        private readonly ICsrfEncryptionService _encryptionService;
+	[Authorize]
+	[ApiController]
+	[Route("[controller]")]
+	public class GoogleAuthController : BaseController
+	{
+		private readonly IGoogleAuthenticationService _googleAuthService;
+		private readonly AuthenticationOptions _authOptions;
+		private readonly ICsrfEncryptionService _encryptionService;
 
-        public GoogleAuthController(IGoogleAuthenticationService googleAuthService, IOptions<AuthenticationOptions> authOptions, ICsrfEncryptionService encryptionService)
-        {
-            _authOptions = authOptions.Value;
-            _googleAuthService = googleAuthService;
-            _encryptionService = encryptionService;
-        }
+		public GoogleAuthController(IGoogleAuthenticationService googleAuthService, IOptions<AuthenticationOptions> authOptions, ICsrfEncryptionService encryptionService)
+		{
+			_authOptions = authOptions.Value;
+			_googleAuthService = googleAuthService;
+			_encryptionService = encryptionService;
+		}
 
-        [AllowAnonymous]
-        [HttpPost("AccessToken")]
-        public async Task<IActionResult> AccessToken(GoogleAccessOptionsDto googleAccessOptionsDto)
-        {
-            var googleUserValidation = await _googleAuthService.ExchangeAuthCode(googleAccessOptionsDto.AuthUser, googleAccessOptionsDto.Code, googleAccessOptionsDto.Nonce);
+		[AllowAnonymous]
+		[HttpPost("AccessToken")]
+		public async Task<IActionResult> AccessToken(GoogleAccessOptionsDto googleAccessOptionsDto)
+		{
+			var googleUserValidation = await _googleAuthService.ExchangeAuthCode(googleAccessOptionsDto.AuthUser, googleAccessOptionsDto.Code, googleAccessOptionsDto.Nonce);
 
-            if (googleUserValidation.IsInvalid)
-                return BadRequest(googleUserValidation.ErrorsString);
+			if (googleUserValidation.IsInvalid)
+				return BadRequest(googleUserValidation.ErrorsString);
 
-            SetCookieDetails(googleUserValidation.ResponseValue);
+			SetCookieDetails(googleUserValidation.ResponseValue);
 
-            return Ok();
-        }
+			return Ok();
+		}
 
-        private void SetCookieDetails(GoogleUser googleUser)
-        {
-            var hubUserDto = new HubUserDto { Email = googleUser.Email, Username = googleUser.Username, LoginIssuer = LoginIssuers.Google.Id };
+		private void SetCookieDetails(GoogleUser googleUser)
+		{
+			var hubUserDto = new HubUserDto { Email = googleUser.Email, Username = googleUser.Username, LoginIssuer = LoginIssuers.Google.Id };
 
-            var httpOnlyCookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
-            Response.Cookies.Append(AuthConstants.IdToken, googleUser.IdToken, httpOnlyCookieOptions);
-            Response.Cookies.Append(AuthConstants.AccessToken, googleUser.AccessToken, httpOnlyCookieOptions);
-            Response.Cookies.Append(AuthConstants.RefreshToken, googleUser.RefreshToken, httpOnlyCookieOptions);
+			var httpOnlyCookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
+			Response.Cookies.Append(AuthConstants.IdToken, googleUser.IdToken, httpOnlyCookieOptions);
+			Response.Cookies.Append(AuthConstants.AccessToken, googleUser.AccessToken, httpOnlyCookieOptions);
+			Response.Cookies.Append(AuthConstants.RefreshToken, googleUser.RefreshToken, httpOnlyCookieOptions);
 
-            var cookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
-            Response.Cookies.Append(AuthConstants.LoggedIn, JsonSerializer.Serialize(hubUserDto), cookieOptions);
-            Response.Cookies.Append(AuthConstants.ForgeryToken, _encryptionService.Encrypt(Guid.NewGuid().ToString()), cookieOptions);
-        }
-    }
+			var cookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
+			Response.Cookies.Append(AuthConstants.LoggedIn, JsonSerializer.Serialize(hubUserDto), cookieOptions);
+			Response.Cookies.Append(AuthConstants.ForgeryToken, _encryptionService.Encrypt(Guid.NewGuid().ToString()), cookieOptions);
+		}
+	}
 }
