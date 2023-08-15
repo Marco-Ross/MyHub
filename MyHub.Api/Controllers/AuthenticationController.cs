@@ -177,7 +177,9 @@ namespace MyHub.Controllers
 
 				RemoveCookies();
 
-				return Forbid(JwtBearerDefaults.AuthenticationScheme);
+				return BadRequest(refreshValidation.ErrorsString);
+
+				//return Forbid(JwtBearerDefaults.AuthenticationScheme);
 			}
 
 			SetCookieDetails(refreshValidation.ResponseValue);
