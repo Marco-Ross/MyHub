@@ -203,9 +203,9 @@ namespace MyHub.Application.Services.Authentication
 				return new Validator<LoginDetails>().AddError("Login has been invalidated.");
 			}
 
-			var newTokens = GenerateTokens(GetHubClaims(user));
+			var newTokens = GenerateTokens(GetHubClaims(user), refreshToken);
 
-			_userService.UpdateRefreshToken(user, refreshToken, newTokens.RefreshToken);
+			_userService.UpdateRefreshToken(user, newTokens.RefreshToken);
 
 			return new Validator<LoginDetails>(SetLoginDetails(newTokens, user));
 		}
@@ -248,6 +248,26 @@ namespace MyHub.Application.Services.Authentication
 			var token = tokenHandler.CreateToken(tokenDescriptor);
 
 			return new Tokens { IdToken = tokenHandler.WriteToken(token), RefreshToken = _encryptionService.GenerateSecureToken() };
+		}
+
+		public Tokens GenerateTokens(HubClaims claims, string refreshToken)
+		{
+			claims = SetAdminClaim(claims);
+
+			var tokenHandler = new JwtSecurityTokenHandler();
+			var tokenKey = Encoding.UTF8.GetBytes(_authOptions.JWT.Key);
+			var tokenDescriptor = new SecurityTokenDescriptor
+			{
+				Audience = claims.Aud,
+				Issuer = claims.Iss,
+				Subject = new ClaimsIdentity(ClaimsHelper.CreateClaims(claims)),
+				Expires = DateTime.UtcNow.AddMinutes(_authOptions.JWT.Expiry),
+				SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(tokenKey), SecurityAlgorithms.HmacSha256Signature)
+			};
+
+			var token = tokenHandler.CreateToken(tokenDescriptor);
+
+			return new Tokens { IdToken = tokenHandler.WriteToken(token), RefreshToken = refreshToken };
 		}
 
 		private HubClaims SetAdminClaim(HubClaims claims)

@@ -1,4 +1,4 @@
-﻿namespace MyHub.Domain.DtoMappingProfiles.Gallery
+﻿namespace MyHub.Domain.DtoMappingProfiles.GalleryProfile
 {
 	public static class GalleryContextOptions
 	{

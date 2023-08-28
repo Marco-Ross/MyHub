@@ -210,14 +210,13 @@ namespace MyHub.Application.Services.Users
 			_applicationDbContext.SaveChanges();
 		}
 
-		public void UpdateRefreshToken(AccessingUser authenticatingUser, string oldRefreshToken, string refreshToken)
+		public void UpdateRefreshToken(AccessingUser authenticatingUser, string refreshToken)
 		{
-			var refreshTokenToUpdate = authenticatingUser.RefreshTokens.FirstOrDefault(x => x.Token == oldRefreshToken);
+			var refreshTokenToUpdate = authenticatingUser.RefreshTokens.FirstOrDefault(x => x.Token == refreshToken);
 
 			if (refreshTokenToUpdate is null)
 				return;
 
-			refreshTokenToUpdate.Token = refreshToken;
 			refreshTokenToUpdate.CreatedDate = DateTime.Now;
 
 			_applicationDbContext.SaveChanges();

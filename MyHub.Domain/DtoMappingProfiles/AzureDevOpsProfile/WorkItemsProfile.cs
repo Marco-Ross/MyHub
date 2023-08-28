@@ -2,7 +2,7 @@
 using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.HubWorkItems;
 using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.WorkItems;
 
-namespace MyHub.Domain.DtoMappingProfiles.AzureDevOps
+namespace MyHub.Domain.DtoMappingProfiles.AzureDevOpsProfile
 {
     public class WorkItemsProfile : Profile
 	{

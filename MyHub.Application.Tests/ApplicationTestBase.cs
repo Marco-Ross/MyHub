@@ -43,7 +43,8 @@ namespace MyHub.Application.Tests
 				{
 					Key = "586E3272357538782F413F4428472B4B",
 					Audience = "marcos-hub",
-					Issuer = "https://localhost"
+					Issuer = "https://localhost",
+					Expiry = 0.17
 				}
 			};
 		}

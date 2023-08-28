@@ -398,7 +398,7 @@ namespace MyHub.Application.Tests.Services.Authentication
 
 			//Assert
 			Assert.True(validator.IsValid);
-			_userService.Verify(x => x.UpdateRefreshToken(It.IsAny<AccessingUser>(), It.IsAny<string>(), It.IsAny<string>()));
+			_userService.Verify(x => x.UpdateRefreshToken(It.IsAny<AccessingUser>(), It.IsAny<string>()));
 		}
 		
 		[Fact]

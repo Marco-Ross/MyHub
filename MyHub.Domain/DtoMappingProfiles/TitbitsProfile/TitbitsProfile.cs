@@ -2,7 +2,7 @@
 using MyHub.Domain.Titbits.TitbitsDto;
 using MyHub.Domain.Titbits;
 
-namespace MyHub.Domain.DtoMappingProfiles.Titbits
+namespace MyHub.Domain.DtoMappingProfiles.TitbitsProfile
 {
 	public class TitbitsProfile : Profile
 	{
