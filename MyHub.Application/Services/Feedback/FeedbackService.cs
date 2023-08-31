@@ -14,7 +14,7 @@ namespace MyHub.Application.Services.Feedback
 			_applicationDbContext = applicationDbContext;
 		}
 
-		public IEnumerable<UserFeedback> GetFeedback() => _applicationDbContext.Feedback.Include(x => x.UserCreated);
+		public IEnumerable<UserFeedback> GetFeedback() => _applicationDbContext.Feedback.Include(x => x.UserCreated).OrderByDescending(x => x.CreatedDate);
 
 		public UserFeedback? PostFeedback(string userId, string description)
 		{
