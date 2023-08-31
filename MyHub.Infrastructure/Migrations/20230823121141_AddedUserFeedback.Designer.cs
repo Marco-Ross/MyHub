@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyHub.Infrastructure.Repository.EntityFramework;
 
@@ -11,9 +12,11 @@ using MyHub.Infrastructure.Repository.EntityFramework;
 namespace MyHub.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230823121141_AddedUserFeedback")]
+    partial class AddedUserFeedback
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -108,9 +111,6 @@ namespace MyHub.Infrastructure.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -178,7 +178,7 @@ namespace MyHub.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("GalleryImageComments");
+                    b.ToTable("GalleryImageComment");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Titbits.Titbit", b =>

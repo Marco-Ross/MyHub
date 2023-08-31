@@ -7,6 +7,7 @@ using MyHub.Domain.Images.Interfaces;
 using MyHub.Domain.Integration.AzureDevOps.AzureStorage.Interfaces;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
+using MyHub.Domain.Validation;
 using MyHub.Infrastructure.Repository.EntityFramework;
 
 namespace MyHub.Application.Services.Gallery
@@ -24,7 +25,7 @@ namespace MyHub.Application.Services.Gallery
 			ApplicationDbContext applicationDbContext, IUserGalleryService userGalleryService, IImageService imageService)
 		{
 			_azureStorageService = azureStorageService;
-			_attachmentService = attachmentService; 
+			_attachmentService = attachmentService;
 			_usersService = usersService;
 			_applicationDbContext = applicationDbContext;
 			_userGalleryService = userGalleryService;
@@ -82,7 +83,7 @@ namespace MyHub.Application.Services.Gallery
 
 				var galleryImage = _applicationDbContext.GalleryImages.SingleOrDefault(x => x.Id == imageId);
 
-				if(galleryImage is null) return false;
+				if (galleryImage is null) return false;
 
 				galleryImage.LikedGalleryUsers.Add(currentUser);
 
@@ -121,14 +122,45 @@ namespace MyHub.Application.Services.Gallery
 			}
 		}
 
-		public IEnumerable<GalleryImage> GetUserImages(string userId)
+		public IEnumerable<GalleryImage> GetDisplayUserImages(string userId, string currentUserId)
 		{
-			return _applicationDbContext.GalleryImages.Include(x => x.LikedGalleryUsers.Take(2)).Include(x => x.GalleryImageComments).OrderByDescending(x => x.DateUploaded).Where(x => x.UserCreatedId == userId);
+			return _applicationDbContext.GalleryImages.Include(x => x.LikedGalleryUsers).Include(x => x.GalleryImageComments).OrderByDescending(x => x.DateUploaded).Where(x => x.UserCreatedId == userId).Select(x => new GalleryImage
+			{
+				Id = x.Id,
+				CommentsCount = x.GalleryImageComments.Count,
+				LikesCount = x.LikedGalleryUsers.Count,
+				LikedGalleryUsers = GetLikedUser(currentUserId, x),
+				Caption = x.Caption,
+				DateUploaded = x.DateUploaded,
+				UserCreatedId = x.UserCreatedId
+			});
 		}
-		
-		public GalleryImage? GetImageData(string imageId)
+
+		public GalleryImage? GetExpandedImageData(string imageId, string currentUserId)
 		{
-			return _applicationDbContext.GalleryImages.Include(x => x.LikedGalleryUsers.Take(2)).Include(x => x.GalleryImageComments.OrderByDescending(x => x.CommentDate)).ThenInclude(c => c.User).SingleOrDefault(x => x.Id == imageId);
+			return _applicationDbContext.GalleryImages.Include(x => x.LikedGalleryUsers).Include(x => x.GalleryImageComments).ThenInclude(c => c.User).Select(x => new GalleryImage
+			{
+				Id = x.Id,
+				CommentsCount = x.GalleryImageComments.Count,
+				LikesCount = x.LikedGalleryUsers.Count,
+				LikedGalleryUsers = GetLikedUser(currentUserId, x),
+				GalleryImageComments = x.GalleryImageComments.OrderByDescending(x => x.CommentDate).ToList(),
+				Caption = x.Caption,
+				DateUploaded = x.DateUploaded,
+				UserCreatedId = x.UserCreatedId
+			}).SingleOrDefault(x => x.Id == imageId);
+		}
+
+		private static List<User> GetLikedUser(string currentUserId, GalleryImage image)
+		{
+			var likedCurrentUser = image.LikedGalleryUsers.Where(x => x.Id == currentUserId).ToList();
+
+			var likedUser = image.LikedGalleryUsers.FirstOrDefault(x => x.Id != currentUserId);
+
+			if (likedUser is not null)
+				likedCurrentUser.Add(likedUser);
+
+			return likedCurrentUser;
 		}
 
 		public GalleryImageComment? PostCommentToImage(string currentUserId, string imageId, string comment)
@@ -166,11 +198,19 @@ namespace MyHub.Application.Services.Gallery
 			};
 		}
 
-		public List<GalleryImageComment> GetImageComments(string imageId)
+		public Validator RemoveComment(string userId, string commentId)
 		{
-			var image = _applicationDbContext.GalleryImages.Include(x => x.GalleryImageComments.OrderByDescending(x => x.CommentDate)).ThenInclude(c => c.User).Single(x => x.Id == imageId);
+			var comment = _applicationDbContext.GalleryImageComments.SingleOrDefault(x => x.Id == commentId);
 
-			return image.GalleryImageComments.ToList();
+			if(comment is null) return new Validator().AddError("Comment does not exist.");
+
+			if(comment.UserId != userId) return new Validator().AddError("Comment does not belong to user.");
+
+			_applicationDbContext.GalleryImageComments.Remove(comment);
+
+			_applicationDbContext.SaveChanges();
+
+			return new Validator();
 		}
 	}
 }

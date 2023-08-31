@@ -19,8 +19,11 @@ namespace MyHub.Domain.Gallery
 
 		[InverseProperty("LikedGalleryImages")]
 		public ICollection<User> LikedGalleryUsers { get; set; } = new List<User>();
-		public int LikesCount => LikedGalleryUsers.Count;
-		public int CommentsCount => GalleryImageComments.Count;
+
+		[NotMapped]
+		public int LikesCount { get; set; }
+		[NotMapped]
+		public int CommentsCount { get; set; }
 
 		[Timestamp]
 		public byte[]? Version { get; set; }

@@ -2,11 +2,11 @@
 using MyHub.Domain.Gallery.GalleryDto;
 using MyHub.Domain.Gallery;
 
-namespace MyHub.Domain.DtoMappingProfiles.Gallery
+namespace MyHub.Domain.DtoMappingProfiles.GalleryProfile
 {
-	public class UserGalleryCommentsResolver : IValueResolver<GalleryImage, UserGalleryCommentsDto, List<LikedUsersDto>>
+	public class LikedUsersWithCommentsResolver : IValueResolver<GalleryImage, GalleryImageWithCommentsDto, List<LikedUsersDto>>
 	{
-		public List<LikedUsersDto> Resolve(GalleryImage source, UserGalleryCommentsDto destination, List<LikedUsersDto> destMember, ResolutionContext context)
+		public List<LikedUsersDto> Resolve(GalleryImage source, GalleryImageWithCommentsDto destination, List<LikedUsersDto> destMember, ResolutionContext context)
 		{
 			var likedUsersDto = source.LikedGalleryUsers.Select(x => new LikedUsersDto { Id = x.Id, Username = x.Username }).ToList();
 
@@ -20,12 +20,9 @@ namespace MyHub.Domain.DtoMappingProfiles.Gallery
 			if (likedUser is null)
 				return likedUsersDto;
 
-			likedUsersDto.Remove(likedUser);
-
 			likedUser.Username = "You";
-			likedUsersDto.Insert(0, likedUser);
 
-			return likedUsersDto.Take(2).ToList();
+			return likedUsersDto.ToList();
 		}
 	}
 }

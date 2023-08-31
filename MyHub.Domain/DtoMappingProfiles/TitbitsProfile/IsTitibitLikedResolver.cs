@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
-using MyHub.Domain.DtoMappingProfiles.Gallery;
 using MyHub.Domain.Titbits.TitbitsDto;
 using MyHub.Domain.Titbits;
+using MyHub.Domain.DtoMappingProfiles.GalleryProfile;
 
-namespace MyHub.Domain.DtoMappingProfiles.Titbits
+namespace MyHub.Domain.DtoMappingProfiles.TitbitsProfile
 {
 	public class IsTitibitLikedResolver : IValueResolver<Titbit, TitbitDto, bool>
 	{

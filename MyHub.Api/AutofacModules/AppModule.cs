@@ -14,10 +14,12 @@ using MyHub.Application.Services.Authentication;
 using MyHub.Application.Services.BackgroundServices;
 using MyHub.Application.Services.Emails;
 using MyHub.Application.Services.Emails.EmailConstructors;
+using MyHub.Application.Services.Feedback;
 using MyHub.Application.Services.Gallery;
 using MyHub.Application.Services.Images;
 using MyHub.Application.Services.Integration.AzureDevOps;
 using MyHub.Application.Services.Integration.AzureStorage;
+using MyHub.Application.Services.Sanitize;
 using MyHub.Application.Services.Titbits;
 using MyHub.Application.Services.Users;
 using MyHub.Domain;
@@ -28,11 +30,13 @@ using MyHub.Domain.Authentication.Google;
 using MyHub.Domain.Authentication.Interfaces;
 using MyHub.Domain.Background.CleanBackground.Interfaces;
 using MyHub.Domain.Emails.Interfaces;
+using MyHub.Domain.Feedback.Interfaces;
 using MyHub.Domain.Gallery.Interfaces;
 using MyHub.Domain.Hubs.Interfaces;
 using MyHub.Domain.Images.Interfaces;
 using MyHub.Domain.Integration.AzureDevOps.AzureStorage.Interfaces;
 using MyHub.Domain.Integration.AzureDevOps.AzureWorkItems.Interfaces;
+using MyHub.Domain.Sanitizer.Interfaces;
 using MyHub.Domain.Titbits.Interfaces;
 using MyHub.Domain.Users.Google;
 using MyHub.Domain.Users.Interfaces;
@@ -91,6 +95,9 @@ namespace MyHub.Api.AutofacModules
 			builder.RegisterType<UserGalleryService>().As<IUserGalleryService>().InstancePerLifetimeScope();
 			builder.RegisterType<MarcoService>().As<IMarcoService>().InstancePerLifetimeScope();
 			builder.RegisterType<TitbitsService>().As<ITitbitsService>().InstancePerLifetimeScope();
+			builder.RegisterType<FeedbackService>().As<IFeedbackService>().InstancePerLifetimeScope();
+			builder.RegisterType<SanitizerService>().As<ISanitizerService>().InstancePerLifetimeScope();
+
 			builder.Register<IGitHubClient>(c =>
 			{
 				var httpContextAccessor = c.Resolve<IHttpContextAccessor>();

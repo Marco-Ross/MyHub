@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyHub.Api.Authorization;
-using MyHub.Domain.DtoMappingProfiles.Gallery;
+using MyHub.Domain.DtoMappingProfiles.GalleryProfile;
 using MyHub.Domain.Gallery.GalleryDto;
 using MyHub.Domain.Gallery.Interfaces;
 using MyHub.Domain.Users.Interfaces;
@@ -33,31 +33,31 @@ namespace MyHub.Api.Controllers
 			if (galleryImage is null)
 				return BadRequest("Failed to upload image.");
 
-			return Ok(_mapper.Map<UserGalleryDto>(galleryImage));
+			return Ok(_mapper.Map<GalleryImageDto>(galleryImage));
 		}
 
 		[AuthorizeLoggedIn]
 		[HttpGet]
 		public IActionResult GetImages()
 		{
-			var usersGallery = _galleryService.GetUserImages(_adminService.GetMarcoId());
+			var usersGallery = _galleryService.GetDisplayUserImages(_adminService.GetMarcoId(), UserId);
 
 			if (usersGallery is null)
 				return BadRequest("Failed to get image ids.");
 
-			return Ok(new { Images = _mapper.Map<List<UserGalleryDto>>(usersGallery, opt => opt.Items[GalleryContextOptions.UserId] = UserId) });
+			return Ok(new { Images = _mapper.Map<List<GalleryImageDto>>(usersGallery, opt => opt.Items[GalleryContextOptions.UserId] = UserId) });
 		}
 
 		[AuthorizeLoggedIn]
 		[HttpGet("ImageData/{imageId}")]
 		public IActionResult GetImageData(string imageId)
 		{
-			var image = _galleryService.GetImageData(imageId);
+			var image = _galleryService.GetExpandedImageData(imageId, UserId);
 
 			if (image is null)
 				return BadRequest("Failed to get image.");
 
-			return Ok(_mapper.Map<UserGalleryCommentsDto>(image, opt => opt.Items[GalleryContextOptions.UserId] = UserId));
+			return Ok(_mapper.Map<GalleryImageWithCommentsDto>(image, opt => opt.Items[GalleryContextOptions.UserId] = UserId));
 		}
 
 		[HttpGet("{imageId}")]
@@ -119,18 +119,19 @@ namespace MyHub.Api.Controllers
 			if (comment is null)
 				return BadRequest("Unable to comment on image.");
 
-			return Ok(_mapper.Map<GalleryImageCommentDto>(comment));
+			return Ok(_mapper.Map<GalleryImageCommentDto>(comment, opt => opt.Items[GalleryContextOptions.UserId] = UserId));
 		}
 
-		[HttpGet("Comments/{imageId}")]
-		public IActionResult GetComment(string imageId)
+		[Authorize]
+		[HttpDelete("Comments/{commentId}")]
+		public IActionResult DeleteComment(string commentId)
 		{
-			var comments = _galleryService.GetImageComments(imageId);
+			var deletedValidator = _galleryService.RemoveComment(UserId, commentId);
 
-			if (comments is null)
-				return BadRequest("Unable to comment on image.");
+			if (deletedValidator.IsInvalid)
+				return BadRequest(deletedValidator.ErrorsString);
 
-			return Ok(_mapper.Map<List<GalleryImageCommentDto>>(comments));
+			return Ok();
 		}
 	}
 }

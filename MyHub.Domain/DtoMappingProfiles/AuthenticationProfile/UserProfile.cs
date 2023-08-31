@@ -2,7 +2,7 @@
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.UsersDto;
 
-namespace MyHub.Domain.DtoMappingProfiles.Authentication
+namespace MyHub.Domain.DtoMappingProfiles.AuthenticationProfile
 {
 	public class UserProfile : Profile
 	{

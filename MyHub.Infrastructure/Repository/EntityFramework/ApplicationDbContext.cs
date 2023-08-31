@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MyHub.Domain.Authentication;
 using MyHub.Domain.Emails;
+using MyHub.Domain.Feedback;
 using MyHub.Domain.Gallery;
 using MyHub.Domain.Titbits;
 using MyHub.Domain.Users;
@@ -24,8 +25,10 @@ namespace MyHub.Infrastructure.Repository.EntityFramework
 		public DbSet<AccountRegisterEmail> AccountRegisterEmails { get; set; }
 		public DbSet<PasswordRecoveryEmail> PasswordRecoveryEmails { get; set; }
 		public DbSet<GalleryImage> GalleryImages { get; set; }
+		public DbSet<GalleryImageComment> GalleryImageComments { get; set; }
 		public DbSet<Titbit> Titbits { get; set; }
 		public DbSet<TitbitLink> TitbitLinks { get; set; }
 		public DbSet<TitbitCategory> TitbitCategories { get; set; }
+		public DbSet<UserFeedback> Feedback { get; set; }
 	}
 }

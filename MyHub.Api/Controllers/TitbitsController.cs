@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyHub.Api.Authorization;
-using MyHub.Domain.DtoMappingProfiles.Gallery;
+using MyHub.Domain.DtoMappingProfiles.GalleryProfile;
 using MyHub.Domain.Titbits;
 using MyHub.Domain.Titbits.Interfaces;
 using MyHub.Domain.Titbits.TitbitsDto;
