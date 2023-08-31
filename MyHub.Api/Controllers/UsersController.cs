@@ -1,7 +1,10 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using MyHub.Domain.Authentication;
+using MyHub.Domain.ConfigurationOptions.Authentication;
 using MyHub.Domain.Enums.Enumerations;
 using MyHub.Domain.Users;
 using MyHub.Domain.Users.Interfaces;
@@ -17,11 +20,13 @@ namespace MyHub.Api.Controllers
 	{
 		private readonly IMapper _mapper;
 		private readonly IUsersService _userService;
+		private readonly AuthenticationOptions _authOptions;
 
-		public UsersController(IUsersService userService, IMapper mapper)
+		public UsersController(IUsersService userService, IMapper mapper, IOptions<AuthenticationOptions> authOptions)
 		{
 			_userService = userService;
 			_mapper = mapper;
+			_authOptions = authOptions.Value;
 		}
 
 		[HttpGet]
@@ -47,7 +52,8 @@ namespace MyHub.Api.Controllers
 
 			loginCookie.Username = accountSettingsUserDto.Username;
 
-			Response.Cookies.Append(AuthConstants.LoggedIn, JsonSerializer.Serialize(loginCookie));
+			var cookieOptions = new CookieOptions { Domain = _authOptions.Cookies.Domain, SameSite = SameSiteMode.Strict, Secure = true, Expires = DateTime.MaxValue };
+			Response.Cookies.Append(AuthConstants.LoggedIn, JsonSerializer.Serialize(loginCookie), cookieOptions);
 
 			return Ok();
 		}
