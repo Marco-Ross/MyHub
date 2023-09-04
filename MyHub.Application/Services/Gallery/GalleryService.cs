@@ -144,7 +144,7 @@ namespace MyHub.Application.Services.Gallery
 				CommentsCount = x.GalleryImageComments.Count,
 				LikesCount = x.LikedGalleryUsers.Count,
 				LikedGalleryUsers = GetLikedUser(currentUserId, x),
-				GalleryImageComments = x.GalleryImageComments.OrderByDescending(x => x.CommentDate).ToList(),
+				GalleryImageComments = x.GalleryImageComments.OrderByDescending(x => x.PinnedDate).ThenByDescending(x => x.CommentDate).ToList(),
 				Caption = x.Caption,
 				DateUploaded = x.DateUploaded,
 				UserCreatedId = x.UserCreatedId
@@ -202,15 +202,39 @@ namespace MyHub.Application.Services.Gallery
 		{
 			var comment = _applicationDbContext.GalleryImageComments.SingleOrDefault(x => x.Id == commentId);
 
-			if(comment is null) return new Validator().AddError("Comment does not exist.");
+			if (comment is null) return new Validator().AddError("Comment does not exist.");
 
-			if(comment.UserId != userId) return new Validator().AddError("Comment does not belong to user.");
+			if (comment.UserId != userId) return new Validator().AddError("Comment does not belong to user.");
 
 			_applicationDbContext.GalleryImageComments.Remove(comment);
 
 			_applicationDbContext.SaveChanges();
 
 			return new Validator();
+		}
+
+		public void PinComment(string userId, string commentId)
+		{
+			var comment = _applicationDbContext.GalleryImageComments.Single(x => x.Id == commentId);
+
+			var userPinned = _applicationDbContext.Users.Single(x => x.Id == userId);
+
+			comment.Pinned = true;
+			comment.PinnedDate = DateTime.Now;
+			comment.UserPinned = userPinned;
+
+			_applicationDbContext.SaveChanges();
+		}
+
+		public void UnpinComment(string userId, string commentId)
+		{
+			var comment = _applicationDbContext.GalleryImageComments.Single(x => x.Id == commentId);
+
+			comment.Pinned = false;
+			comment.PinnedDate = null;
+			comment.UserPinned = null;
+
+			_applicationDbContext.SaveChanges();
 		}
 	}
 }

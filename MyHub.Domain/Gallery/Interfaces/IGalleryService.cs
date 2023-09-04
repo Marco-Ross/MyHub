@@ -14,5 +14,7 @@ namespace MyHub.Domain.Gallery.Interfaces
 		GalleryImageComment? PostCommentToImage(string currentUserId, string imageId, string comment);
 		GalleryImage? GetExpandedImageData(string imageId, string currentUserId);
 		Validator RemoveComment(string userId, string commentId);
+		void PinComment(string userId, string commentId);
+		void UnpinComment(string userId, string commentId);
 	}
 }
