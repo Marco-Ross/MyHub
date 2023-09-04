@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MyHub.Infrastructure.Repository.EntityFramework;
 
@@ -11,9 +12,11 @@ using MyHub.Infrastructure.Repository.EntityFramework;
 namespace MyHub.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230904140018_AddedCommentPin")]
+    partial class AddedCommentPin
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -178,16 +181,11 @@ namespace MyHub.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("UserPinnedId")
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ImageId");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("UserPinnedId");
 
                     b.ToTable("GalleryImageComments");
                 });
@@ -477,15 +475,9 @@ namespace MyHub.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MyHub.Domain.Users.User", "UserPinned")
-                        .WithMany()
-                        .HasForeignKey("UserPinnedId");
-
                     b.Navigation("GalleryImage");
 
                     b.Navigation("User");
-
-                    b.Navigation("UserPinned");
                 });
 
             modelBuilder.Entity("MyHub.Domain.Titbits.Titbit", b =>

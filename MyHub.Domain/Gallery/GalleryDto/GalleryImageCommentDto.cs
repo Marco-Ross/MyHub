@@ -7,6 +7,8 @@
 		public string Username { get; set; } = string.Empty;
 		public string Comment { get; set; } = string.Empty;
 		public DateTime CommentDate { get; set; }
+		public bool Pinned { get; set; }
+		public DateTime? PinnedDate { get; set; }
 		public bool IsMyComment { get; set; }
 	}
 }

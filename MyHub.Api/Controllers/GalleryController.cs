@@ -122,6 +122,24 @@ namespace MyHub.Api.Controllers
 			return Ok(_mapper.Map<GalleryImageCommentDto>(comment, opt => opt.Items[GalleryContextOptions.UserId] = UserId));
 		}
 
+		[Authorize(Policy = "AdminOnly")]
+		[HttpPost("Comment/Pin")]
+		public IActionResult PostPinComment(PinCommentDto pinCommentDto)
+		{
+			_galleryService.PinComment(UserId, pinCommentDto.CommentId);
+
+			return Ok();
+		}
+
+		[Authorize(Policy = "AdminOnly")]
+		[HttpPost("Comment/Unpin")]
+		public IActionResult PostUnpinComment(PinCommentDto unpinCommentDto)
+		{
+			_galleryService.UnpinComment(UserId, unpinCommentDto.CommentId);
+
+			return Ok();
+		}
+
 		[Authorize]
 		[HttpDelete("Comments/{commentId}")]
 		public IActionResult DeleteComment(string commentId)
