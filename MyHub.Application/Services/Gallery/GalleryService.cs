@@ -232,6 +232,7 @@ namespace MyHub.Application.Services.Gallery
 
 			comment.Pinned = false;
 			comment.PinnedDate = null;
+			comment.UserPinnedId = null;
 			comment.UserPinned = null;
 
 			_applicationDbContext.SaveChanges();
